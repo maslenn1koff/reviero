@@ -457,3 +457,50 @@ impl SimdReduceOps for Avx2Fma {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::backend::test_utils::{Check, Run};
+    use crate::traits::SimdTypes;
+
+    fn run(check: Check) {
+        if !std::arch::is_x86_feature_detected!("avx2") || !std::arch::is_x86_feature_detected!("fma") {
+            eprintln!("avx2 backend test skipped: CPU does not support avx2+fma");
+            return;
+        }
+
+        unsafe { vectorize(Run(check)) };
+    }
+
+    #[test]
+    fn lanes() {
+        assert_eq!(Avx2Fma::f32s_lanes, 8);
+        assert_eq!(Avx2Fma::f64s_lanes, 4);
+    }
+
+    #[test]
+    fn io() {
+        run(Check::Io);
+    }
+
+    #[test]
+    fn float_ops() {
+        run(Check::Float);
+    }
+
+    #[test]
+    fn mask_ops() {
+        run(Check::Mask);
+    }
+
+    #[test]
+    fn bit_ops() {
+        run(Check::Bits);
+    }
+
+    #[test]
+    fn reduce_ops() {
+        run(Check::Reduce);
+    }
+}
