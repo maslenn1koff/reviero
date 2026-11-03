@@ -328,12 +328,12 @@ impl SimdMaskOps for Avx2Fma {
 
     #[inline(always)]
     fn ne_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::m32s {
-        unsafe { AvxMaskF32(_mm256_movemask_ps(_mm256_cmp_ps::<_CMP_NEQ_OQ>(a, b)) as u8) }
+        unsafe { AvxMaskF32(_mm256_movemask_ps(_mm256_cmp_ps::<_CMP_NEQ_UQ>(a, b)) as u8) }
     }
 
     #[inline(always)]
     fn ne_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::m64s {
-        unsafe { AvxMaskF64(_mm256_movemask_pd(_mm256_cmp_pd::<_CMP_NEQ_OQ>(a, b)) as u8) }
+        unsafe { AvxMaskF64(_mm256_movemask_pd(_mm256_cmp_pd::<_CMP_NEQ_UQ>(a, b)) as u8) }
     }
 
     #[inline(always)]
