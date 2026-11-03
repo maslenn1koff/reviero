@@ -32,14 +32,12 @@ impl<'a> reviero::SimdFn for Sum<'a> {
 
     #[inline(always)]
     fn call<S: reviero::traits::Simd>(self, simd: S) -> Self::Result {
-        let (mut head, tail) = reviero::utils::as_simd_f32s::<S>(self.0);
+        let (head, tail) = reviero::utils::as_simd_f32s::<S>(self.0);
 
         let mut sum = simd.splat_f32s(0.0);
 
-        let mut i = 0;
-        while i < head.len() {
-            sum = simd.add_f32s(sum, head.next().unwrap());
-            i += 1;
+        for vector in head {
+            sum = simd.add_f32s(sum, vector);
         }
 
         let mut sum = simd.reduce_sum_f32s(sum);
@@ -58,6 +56,8 @@ fn main() {
     println!("sum: {sum}");
 }
 ```
+
+`SimdFn::call` must be marked `#[inline(always)]`. This lets the selected backend's target features propagate into the operation and allows its vector instructions to be inlined; without it the operation stays correct, but may lose most of the performance benefit.
 
 ### Runtime Dispatch
 

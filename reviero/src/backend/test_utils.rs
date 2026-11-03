@@ -132,6 +132,23 @@ fn check_float_f32<S: Simd>(simd: S) {
         simd.nmul_sub_f32s(av, bv, cv),
         (0..lanes).map(|lane| -(a[lane] * 2.0) - c[lane]).collect::<Vec<_>>()
     );
+
+    // Cancelling to zero must keep the sign of zero consistent with `a*b - c`
+    // and `-(a*b) - c` (i.e. +0.0), not just match under float equality.
+    let ones = vec![1.0f32; lanes];
+    let neg_ones = vec![-1.0f32; lanes];
+    let ones_v = simd.load_f32s(&ones);
+    let neg_ones_v = simd.load_f32s(&neg_ones);
+
+    simd.store_f32s(&mut out, simd.mul_sub_f32s(ones_v, ones_v, ones_v));
+    for (lane, &value) in out.iter().enumerate() {
+        assert_eq!(value.to_bits(), 0.0f32.to_bits(), "mul_sub f32 zero sign lane {lane}");
+    }
+
+    simd.store_f32s(&mut out, simd.nmul_sub_f32s(ones_v, ones_v, neg_ones_v));
+    for (lane, &value) in out.iter().enumerate() {
+        assert_eq!(value.to_bits(), 0.0f32.to_bits(), "nmul_sub f32 zero sign lane {lane}");
+    }
 }
 
 #[inline(always)]
@@ -186,6 +203,22 @@ fn check_float_f64<S: Simd>(simd: S) {
         simd.nmul_sub_f64s(av, bv, cv),
         (0..lanes).map(|lane| -(a[lane] * 2.0) - c[lane]).collect::<Vec<_>>()
     );
+
+    // Same zero-sign checks as for f32.
+    let ones = vec![1.0f64; lanes];
+    let neg_ones = vec![-1.0f64; lanes];
+    let ones_v = simd.load_f64s(&ones);
+    let neg_ones_v = simd.load_f64s(&neg_ones);
+
+    simd.store_f64s(&mut out, simd.mul_sub_f64s(ones_v, ones_v, ones_v));
+    for (lane, &value) in out.iter().enumerate() {
+        assert_eq!(value.to_bits(), 0.0f64.to_bits(), "mul_sub f64 zero sign lane {lane}");
+    }
+
+    simd.store_f64s(&mut out, simd.nmul_sub_f64s(ones_v, ones_v, neg_ones_v));
+    for (lane, &value) in out.iter().enumerate() {
+        assert_eq!(value.to_bits(), 0.0f64.to_bits(), "nmul_sub f64 zero sign lane {lane}");
+    }
 }
 
 #[inline(always)]
@@ -230,6 +263,31 @@ fn check_mask_f32<S: Simd>(simd: S) {
     assert!(none.or(all).all(), "f32 mask or");
     assert!(none.not().all(), "f32 mask not");
     assert!(all.not().none(), "f32 mask not all");
+
+    // Mixed (partially set) masks must survive and/or/not/select correctly.
+    if lanes >= 2 {
+        let left: Vec<f32> = (0..lanes).map(|lane| lane as f32).collect();
+        let right: Vec<f32> = (0..lanes).map(|lane| (lane + lane % 2) as f32).collect();
+        let lv = simd.load_f32s(&left);
+        let rv = simd.load_f32s(&right);
+        let mixed = simd.eq_f32s(lv, rv);
+
+        assert!(mixed.any(), "f32 mixed mask any");
+        assert!(!mixed.all(), "f32 mixed mask all");
+        assert!(!mixed.none(), "f32 mixed mask none");
+
+        simd.store_f32s(&mut out, simd.select_f32s(mixed, one, zero));
+        for (lane, &value) in out.iter().enumerate() {
+            let want = if lane % 2 == 0 { 1.0 } else { 0.0 };
+            assert_eq!(value, want, "f32 mixed select lane {lane}");
+        }
+
+        let full = simd.eq_f32s(lv, lv);
+        assert!(!mixed.and(full).all(), "f32 mixed and all");
+        assert!(mixed.or(full).all(), "f32 mixed or all");
+        assert!(mixed.not().any(), "f32 mixed not any");
+        assert!(mixed.and(full.not()).none(), "f32 mixed and empty");
+    }
 }
 
 #[inline(always)]
@@ -274,6 +332,31 @@ fn check_mask_f64<S: Simd>(simd: S) {
     assert!(none.or(all).all(), "f64 mask or");
     assert!(none.not().all(), "f64 mask not");
     assert!(all.not().none(), "f64 mask not all");
+
+    // Mixed (partially set) masks must survive and/or/not/select correctly.
+    if lanes >= 2 {
+        let left: Vec<f64> = (0..lanes).map(|lane| lane as f64).collect();
+        let right: Vec<f64> = (0..lanes).map(|lane| (lane + lane % 2) as f64).collect();
+        let lv = simd.load_f64s(&left);
+        let rv = simd.load_f64s(&right);
+        let mixed = simd.eq_f64s(lv, rv);
+
+        assert!(mixed.any(), "f64 mixed mask any");
+        assert!(!mixed.all(), "f64 mixed mask all");
+        assert!(!mixed.none(), "f64 mixed mask none");
+
+        simd.store_f64s(&mut out, simd.select_f64s(mixed, one, zero));
+        for (lane, &value) in out.iter().enumerate() {
+            let want = if lane % 2 == 0 { 1.0 } else { 0.0 };
+            assert_eq!(value, want, "f64 mixed select lane {lane}");
+        }
+
+        let full = simd.eq_f64s(lv, lv);
+        assert!(!mixed.and(full).all(), "f64 mixed and all");
+        assert!(mixed.or(full).all(), "f64 mixed or all");
+        assert!(mixed.not().any(), "f64 mixed not any");
+        assert!(mixed.and(full.not()).none(), "f64 mixed and empty");
+    }
 }
 
 #[inline(always)]

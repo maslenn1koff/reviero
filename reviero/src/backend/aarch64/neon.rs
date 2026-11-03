@@ -257,16 +257,18 @@ impl SimdFloatOps for Neon {
 
     #[inline(always)]
     fn mul_sub_f32s(self, a: Self::f32s, b: Self::f32s, c: Self::f32s) -> Self::f32s {
-        unsafe { vnegq_f32(vfmsq_f32(c, a, b)) }
+        // `a * b - c`; negating `c` keeps the sign of zero correct.
+        unsafe { vfmaq_f32(vnegq_f32(c), a, b) }
     }
 
     #[inline(always)]
     fn mul_sub_f64s(self, a: Self::f64s, b: Self::f64s, c: Self::f64s) -> Self::f64s {
-        unsafe { vnegq_f64(vfmsq_f64(c, a, b)) }
+        unsafe { vfmaq_f64(vnegq_f64(c), a, b) }
     }
 
     #[inline(always)]
     fn nmul_add_f32s(self, a: Self::f32s, b: Self::f32s, c: Self::f32s) -> Self::f32s {
+        // `-(a * b) + c`.
         unsafe { vfmsq_f32(c, a, b) }
     }
 
@@ -277,12 +279,13 @@ impl SimdFloatOps for Neon {
 
     #[inline(always)]
     fn nmul_sub_f32s(self, a: Self::f32s, b: Self::f32s, c: Self::f32s) -> Self::f32s {
-        unsafe { vnegq_f32(vfmaq_f32(c, a, b)) }
+        // `-(a * b) - c`.
+        unsafe { vfmsq_f32(vnegq_f32(c), a, b) }
     }
 
     #[inline(always)]
     fn nmul_sub_f64s(self, a: Self::f64s, b: Self::f64s, c: Self::f64s) -> Self::f64s {
-        unsafe { vnegq_f64(vfmaq_f64(c, a, b)) }
+        unsafe { vfmsq_f64(vnegq_f64(c), a, b) }
     }
 }
 

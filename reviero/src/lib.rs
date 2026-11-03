@@ -28,6 +28,7 @@
 //! impl SimdFn for Sum<'_> {
 //!     type Result = f32;
 //!
+//!     #[inline(always)]
 //!     fn call<S: reviero::traits::Simd>(self, simd: S) -> Self::Result {
 //!         let (vectors, tail) = reviero::utils::as_simd_f32s::<S>(self.0);
 //!         let mut sum = simd.splat_f32s(0.0);
@@ -103,11 +104,28 @@ impl Backend {
 
 static BACKEND: LazyLock<Backend> = LazyLock::new(Backend::new);
 
+/// A SIMD operation that [`dispatch`] can run on the best available backend.
+///
+/// `dispatch` monomorphizes the operation for every supported backend. The
+/// implementation of [`SimdFn::call`] must be annotated with
+/// `#[inline(always)]`; this is what lets the selected backend's target
+/// features propagate into the operation and lets its vector instructions be
+/// inlined into the caller. Without it the operation remains correct, but it
+/// can lose most of the performance benefit of the SIMD backend.
 pub trait SimdFn {
     type Result;
+
+    /// Runs this operation with the SIMD backend represented by `simd`.
+    ///
+    /// Implementations should be marked `#[inline(always)]`.
     fn call<S: Simd>(self, simd: S) -> Self::Result;
 }
 
+/// Runs `op` using the best SIMD backend supported by the current CPU.
+///
+/// The backend is detected once and then reused. On x86/x86_64 the preference
+/// is AVX-512F + FMA, AVX2 + FMA, SSE2, then the scalar fallback. On AArch64
+/// the NEON backend is used.
 #[inline(always)]
 pub fn dispatch<Op: SimdFn>(op: Op) -> Op::Result {
     match &*BACKEND {
