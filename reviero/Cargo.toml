@@ -2,6 +2,14 @@
 name = "reviero"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.89"
+description = "Portable SIMD operations with runtime CPU dispatch"
+license = "MIT"
+repository = "https://github.com/maslenn1koff/reviero"
+documentation = "https://docs.rs/reviero"
+readme = "../README.md"
+keywords = ["simd", "numerics", "vectorization", "performance"]
+categories = ["algorithms", "hardware-support"]
 
 [dependencies]
 paste = "1"

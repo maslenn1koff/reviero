@@ -1,3 +1,57 @@
+//! Portable SIMD operations with runtime CPU dispatch.
+//!
+//! `reviero` provides a shared set of vector operations for `f32` and `f64`.
+//! Implement an operation as [`SimdFn`] and pass it to [`dispatch`]; the
+//! operation is then run using the best supported backend selected for the
+//! current CPU. This lets one implementation work across supported
+//! architectures without requiring callers to use architecture-specific
+//! intrinsics.
+//!
+//! On x86 and x86_64, dispatch prefers AVX-512F with FMA, then AVX2 with FMA,
+//! then SSE2, and otherwise uses the scalar fallback. On AArch64, it uses
+//! NEON. The backend is detected once and reused. Floating-point results can
+//! vary between backends because reductions and fused multiply-add operations
+//! can change rounding.
+//!
+//! # Implementing an operation
+//!
+//! The [`SimdFn::call`] method is generic over the selected SIMD implementation.
+//! Use [`utils::as_simd_f32s`] or [`utils::as_simd_f64s`] to process complete
+//! vectors; each utility also returns the remaining elements for scalar
+//! handling.
+//!
+//! ```
+//! use reviero::{SimdFn, dispatch};
+//!
+//! struct Sum<'a>(&'a [f32]);
+//!
+//! impl SimdFn for Sum<'_> {
+//!     type Result = f32;
+//!
+//!     fn call<S: reviero::traits::Simd>(self, simd: S) -> Self::Result {
+//!         let (vectors, tail) = reviero::utils::as_simd_f32s::<S>(self.0);
+//!         let mut sum = simd.splat_f32s(0.0);
+//!
+//!         for vector in vectors {
+//!             sum = simd.add_f32s(sum, vector);
+//!         }
+//!
+//!         let mut result = simd.reduce_sum_f32s(sum);
+//!         for &value in tail {
+//!             result += value;
+//!         }
+//!         result
+//!     }
+//! }
+//!
+//! let values = [1.0, 2.0, 3.0, 4.0, 5.0];
+//! assert_eq!(dispatch(Sum(&values)), 15.0);
+//! ```
+//!
+//! The available vector operations, masks, and lane counts are defined by the
+//! traits in [`traits`]. Their concrete lane counts depend on the selected
+//! backend.
+
 #![allow(non_upper_case_globals, non_camel_case_types)]
 
 mod backend;
