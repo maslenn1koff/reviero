@@ -2,6 +2,7 @@
 
 mod backend;
 pub mod traits;
+pub mod utils;
 
 use crate::{backend::fallback::Fallback, traits::Simd};
 use std::sync::LazyLock;

@@ -201,10 +201,12 @@ impl SimdMaskOps for Fallback {
     define_compare_ops!(f32, m32s, eq, ne, lt, le, gt, ge);
     define_compare_ops!(f64, m64s, eq, ne, lt, le, gt, ge);
 
+    #[inline(always)]
     fn select_f32s(self, mask: Self::m32s, a: Self::f32s, b: Self::f32s) -> Self::f32s {
         if mask.0 { a } else { b }
     }
-
+    
+    #[inline(always)]
     fn select_f64s(self, mask: Self::m64s, a: Self::f64s, b: Self::f64s) -> Self::f64s {
         if mask.0 { a } else { b }
     }
