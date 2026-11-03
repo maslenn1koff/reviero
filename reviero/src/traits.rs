@@ -151,8 +151,10 @@ pub trait SimdMaskOps: SimdTypes {
 pub trait SimdBitOps: SimdTypes {
     // Bitwise ops on the float bit patterns (and/or/xor are one instruction).
     // Enough for sign tricks: abs = and, neg = xor, copysign = and + or.
-    define_simd_binary_ops!(f32, bitand, bitor, bitxor);
-    define_simd_binary_ops!(f64, bitand, bitor, bitxor);
+    define_simd_unary_ops!(f32, bitnot);
+    define_simd_unary_ops!(f64, bitnot);
+    define_simd_binary_ops!(f32, bitand, bitor, bitxor, bitandnot);
+    define_simd_binary_ops!(f64, bitand, bitor, bitxor, bitandnot);
 }
 
 pub trait SimdReduceOps: SimdTypes {
