@@ -205,7 +205,7 @@ impl SimdMaskOps for Fallback {
     fn select_f32s(self, mask: Self::m32s, a: Self::f32s, b: Self::f32s) -> Self::f32s {
         if mask.0 { a } else { b }
     }
-    
+
     #[inline(always)]
     fn select_f64s(self, mask: Self::m64s, a: Self::f64s, b: Self::f64s) -> Self::f64s {
         if mask.0 { a } else { b }

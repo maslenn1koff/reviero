@@ -104,8 +104,8 @@ pub trait SimdMask: Copy + Debug + Send + Sync + 'static {
 }
 
 pub trait SimdTypes: Copy + Debug + Default + Send + Sync + 'static {
-    type f32s: Copy + Debug + Default + Send + Sync + 'static;
-    type f64s: Copy + Debug + Default + Send + Sync + 'static;
+    type f32s: Copy + Debug + Send + Sync + 'static;
+    type f64s: Copy + Debug + Send + Sync + 'static;
 
     type m32s: SimdMask;
     type m64s: SimdMask;
