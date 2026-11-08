@@ -152,6 +152,26 @@ impl SimdIo for Neon {
         assert!(dst.len() >= Self::f64s_lanes);
         unsafe { vst1q_f64(dst.as_mut_ptr(), value) };
     }
+
+    #[inline(always)]
+    unsafe fn load_unchecked_f32s(self, src: &[f32]) -> Self::f32s {
+        unsafe { vld1q_f32(src.as_ptr()) }
+    }
+
+    #[inline(always)]
+    unsafe fn load_unchecked_f64s(self, src: &[f64]) -> Self::f64s {
+        unsafe { vld1q_f64(src.as_ptr()) }
+    }
+
+    #[inline(always)]
+    unsafe fn store_unchecked_f32s(self, dst: &mut [f32], value: Self::f32s) {
+        unsafe { vst1q_f32(dst.as_mut_ptr(), value) }
+    }
+
+    #[inline(always)]
+    unsafe fn store_unchecked_f64s(self, dst: &mut [f64], value: Self::f64s) {
+        unsafe { vst1q_f64(dst.as_mut_ptr(), value) };
+    }
 }
 
 impl SimdFloatOps for Neon {

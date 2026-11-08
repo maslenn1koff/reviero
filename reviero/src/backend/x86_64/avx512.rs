@@ -160,6 +160,26 @@ impl SimdIo for Avx512 {
         assert!(dst.len() >= Self::f64s_lanes);
         unsafe { _mm512_storeu_pd(dst.as_mut_ptr(), value) };
     }
+
+    #[inline(always)]
+    unsafe fn load_unchecked_f32s(self, src: &[f32]) -> Self::f32s {
+        unsafe { _mm512_loadu_ps(src.as_ptr()) }
+    }
+
+    #[inline(always)]
+    unsafe fn load_unchecked_f64s(self, src: &[f64]) -> Self::f64s {
+        unsafe { _mm512_loadu_pd(src.as_ptr()) }
+    }
+
+    #[inline(always)]
+    unsafe fn store_unchecked_f32s(self, dst: &mut [f32], value: Self::f32s) {
+        unsafe { _mm512_storeu_ps(dst.as_mut_ptr(), value) }
+    }
+
+    #[inline(always)]
+    unsafe fn store_unchecked_f64s(self, dst: &mut [f64], value: Self::f64s) {
+        unsafe { _mm512_storeu_pd(dst.as_mut_ptr(), value) }
+    }
 }
 
 impl SimdFloatOps for Avx512 {

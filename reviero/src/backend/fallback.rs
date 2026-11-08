@@ -18,6 +18,16 @@ macro_rules! define_io_ops {
             fn [<store_ $ty s>](self, dst: &mut [$ty], value: Self::[<$ty s>]) {
                 dst[0] = value;
             }
+
+            #[inline(always)]
+            unsafe fn [<load_unchecked_ $ty s>](self, src: &[$ty]) -> Self::[<$ty s>] {
+                src[0]
+            }
+
+            #[inline(always)]
+            unsafe fn [<store_unchecked_ $ty s>](self, dst: &mut [$ty], value: Self::[<$ty s>]) {
+                dst[0] = value;
+            }
         }
     };
 }

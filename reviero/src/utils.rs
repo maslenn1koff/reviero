@@ -10,7 +10,7 @@ macro_rules! define_as_simd {
 
                 let count = src.len() / S::[<$ty s _lanes>];
                 let (head, tail) = src.split_at(count * S::[<$ty s _lanes>]);
-                let vectors = head.chunks_exact(S::[<$ty s _lanes>]).map(move |chunk| simd.[<load_ $ty s>](chunk));
+                let vectors = head.chunks_exact(S::[<$ty s _lanes>]).map(move |chunk| unsafe { simd.[<load_unchecked_ $ty s>](chunk) });
 
                 (vectors, tail)
             }
