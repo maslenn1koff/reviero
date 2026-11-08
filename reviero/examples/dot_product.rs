@@ -1,5 +1,4 @@
 use reviero::{SimdFn, dispatch};
-use std::vec;
 
 macro_rules! define_dot {
     ($ty:ty) => {

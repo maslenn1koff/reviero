@@ -132,11 +132,11 @@ pub fn dispatch<Op: SimdFn>(op: Op) -> Op::Result {
         #[cfg(not(target_arch = "aarch64"))]
         Backend::Fallback => op.call(Fallback),
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        Backend::Sse2 => unsafe { backend::x86_64::sse2::vectorize(op) },
+        Backend::Sse2 => unsafe { backend::x86::sse2::vectorize(op) },
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        Backend::Avx2Fma => unsafe { backend::x86_64::avx2::vectorize(op) },
+        Backend::Avx2Fma => unsafe { backend::x86::avx2::vectorize(op) },
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        Backend::Avx512f => unsafe { backend::x86_64::avx512::vectorize(op) },
+        Backend::Avx512f => unsafe { backend::x86::avx512::vectorize(op) },
         #[cfg(target_arch = "aarch64")]
         Backend::Neon => unsafe { backend::aarch64::neon::vectorize(op) },
     }

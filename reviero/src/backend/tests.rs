@@ -64,21 +64,21 @@ fn all_backends_match_fallback() {
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     {
         if std::arch::is_x86_feature_detected!("sse2") {
-            let actual = unsafe { super::x86_64::sse2::vectorize(SuiteOp) };
+            let actual = unsafe { super::x86::sse2::vectorize(SuiteOp) };
             assert_suite("sse2", &expected, &actual);
         } else {
             eprintln!("sse2 backend skipped: CPU does not support sse2");
         }
 
         if std::arch::is_x86_feature_detected!("avx2") && std::arch::is_x86_feature_detected!("fma") {
-            let actual = unsafe { super::x86_64::avx2::vectorize(SuiteOp) };
+            let actual = unsafe { super::x86::avx2::vectorize(SuiteOp) };
             assert_suite("avx2+fma", &expected, &actual);
         } else {
             eprintln!("avx2 backend skipped: CPU does not support avx2+fma");
         }
 
         if std::arch::is_x86_feature_detected!("avx512f") && std::arch::is_x86_feature_detected!("fma") {
-            let actual = unsafe { super::x86_64::avx512::vectorize(SuiteOp) };
+            let actual = unsafe { super::x86::avx512::vectorize(SuiteOp) };
             assert_suite("avx512f+fma", &expected, &actual);
         } else {
             eprintln!("avx512 backend skipped: CPU does not support avx512f+fma");

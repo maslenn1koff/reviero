@@ -32,7 +32,7 @@ impl<'a> reviero::SimdFn for Sum<'a> {
 
     #[inline(always)]
     fn call<S: reviero::traits::Simd>(self, simd: S) -> Self::Result {
-        let (head, tail) = reviero::utils::as_simd_f32s::<S>(self.0);
+        let (head, tail) = reviero::utils::as_simd_f32s(&simd, self.0);
 
         let mut sum = simd.splat_f32s(0.0);
 
