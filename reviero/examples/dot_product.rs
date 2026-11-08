@@ -13,8 +13,8 @@ macro_rules! define_dot {
                 fn call<S: reviero::traits::Simd>(self, simd: S) -> Self::Result {
                     assert_eq!(self.0.len(), self.1.len());
 
-                    let (x_head, x_tail) = reviero::utils::[<as_simd_ $ty s>]::<S>(self.0);
-                    let (y_head, y_tail) = reviero::utils::[<as_simd_ $ty s>]::<S>(self.1);
+                    let (x_head, x_tail) = reviero::utils::[<as_simd_ $ty s>](&simd, self.0);
+                    let (y_head, y_tail) = reviero::utils::[<as_simd_ $ty s>](&simd, self.1);
 
                     let mut acc = [simd.[<splat_ $ty s>](0.0); 4];
 
