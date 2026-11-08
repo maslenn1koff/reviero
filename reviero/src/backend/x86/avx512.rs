@@ -516,48 +516,14 @@ impl SimdReduceOps for Avx512 {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::backend::test_utils::{Check, Run};
-    use crate::traits::SimdTypes;
-
-    fn run(check: Check) {
-        if !std::arch::is_x86_feature_detected!("avx512f") || !std::arch::is_x86_feature_detected!("fma") {
-            eprintln!("avx512 backend test skipped: CPU does not support avx512f+fma");
-            return;
-        }
-
-        unsafe { vectorize(Run(check)) };
+fn run(check: crate::backend::test_utils::Check) {
+    if !std::arch::is_x86_feature_detected!("avx512f") || !std::arch::is_x86_feature_detected!("fma") {
+        eprintln!("avx512 backend test skipped: CPU does not support avx512f+fma");
+        return;
     }
 
-    #[test]
-    fn lanes() {
-        assert_eq!(Avx512::f32s_lanes, 16);
-        assert_eq!(Avx512::f64s_lanes, 8);
-    }
-
-    #[test]
-    fn io() {
-        run(Check::Io);
-    }
-
-    #[test]
-    fn float_ops() {
-        run(Check::Float);
-    }
-
-    #[test]
-    fn mask_ops() {
-        run(Check::Mask);
-    }
-
-    #[test]
-    fn bit_ops() {
-        run(Check::Bits);
-    }
-
-    #[test]
-    fn reduce_ops() {
-        run(Check::Reduce);
-    }
+    unsafe { vectorize(crate::backend::test_utils::Run(check)) };
 }
+
+#[cfg(test)]
+crate::backend_tests!(Avx512, 16, 8);

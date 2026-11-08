@@ -233,44 +233,11 @@ impl SimdReduceOps for Fallback {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
+fn run(check: crate::backend::test_utils::Check) {
     use crate::SimdFn;
-    use crate::backend::test_utils::{Check, Run};
-    use crate::traits::SimdTypes;
 
-    fn run(check: Check) {
-        Run(check).call(Fallback);
-    }
-
-    #[test]
-    fn lanes() {
-        assert_eq!(Fallback::f32s_lanes, 1);
-        assert_eq!(Fallback::f64s_lanes, 1);
-    }
-
-    #[test]
-    fn io() {
-        run(Check::Io);
-    }
-
-    #[test]
-    fn float_ops() {
-        run(Check::Float);
-    }
-
-    #[test]
-    fn mask_ops() {
-        run(Check::Mask);
-    }
-
-    #[test]
-    fn bit_ops() {
-        run(Check::Bits);
-    }
-
-    #[test]
-    fn reduce_ops() {
-        run(Check::Reduce);
-    }
+    crate::backend::test_utils::Run(check).call(Fallback);
 }
+
+#[cfg(test)]
+crate::backend_tests!(Fallback, 1, 1);

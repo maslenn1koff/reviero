@@ -22,11 +22,15 @@ macro_rules! define_simd_io_ops {
 
             /// Loads the first `LANES` elements of `src`.
             ///
+            /// # Safety
+            /// 
             /// UB if `src.len()` is shorter than the lane count.
             unsafe fn [<load_unchecked_ $ty s>](self, src: &[$ty]) -> Self::[<$ty s>];
 
             /// Stores the vector into the first `LANES` elements of `dst`.
             ///
+            /// # Safety
+            /// 
             /// UB if `dst.len()` is shorter than the lane count.
             unsafe fn [<store_unchecked_ $ty s>](self, dst: &mut [$ty], value: Self::[<$ty s>]);
         }

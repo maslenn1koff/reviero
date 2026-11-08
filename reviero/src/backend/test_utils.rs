@@ -7,6 +7,52 @@
 use crate::SimdFn;
 use crate::traits::{Simd, SimdMask};
 
+/// Generates the standard per-backend test module.
+///
+/// The enclosing module must expose a `run(check: Check)` helper that executes
+/// a [`Check`] on the backend under test.
+#[cfg(test)]
+#[macro_export]
+macro_rules! backend_tests {
+    ($backend:ty, $f32_lanes:expr, $f64_lanes:expr) => {
+        #[cfg(test)]
+        mod tests {
+            use super::*;
+
+            #[test]
+            fn lanes() {
+                assert_eq!(<$backend as $crate::traits::SimdTypes>::f32s_lanes, $f32_lanes);
+                assert_eq!(<$backend as $crate::traits::SimdTypes>::f64s_lanes, $f64_lanes);
+            }
+
+            #[test]
+            fn io() {
+                super::run($crate::backend::test_utils::Check::Io);
+            }
+
+            #[test]
+            fn float_ops() {
+                super::run($crate::backend::test_utils::Check::Float);
+            }
+
+            #[test]
+            fn mask_ops() {
+                super::run($crate::backend::test_utils::Check::Mask);
+            }
+
+            #[test]
+            fn bit_ops() {
+                super::run($crate::backend::test_utils::Check::Bits);
+            }
+
+            #[test]
+            fn reduce_ops() {
+                super::run($crate::backend::test_utils::Check::Reduce);
+            }
+        }
+    };
+}
+
 /// The operation group executed by [`Run`].
 #[derive(Clone, Copy, Debug)]
 pub enum Check {

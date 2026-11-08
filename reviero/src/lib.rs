@@ -30,7 +30,7 @@
 //!
 //!     #[inline(always)]
 //!     fn call<S: reviero::traits::Simd>(self, simd: S) -> Self::Result {
-//!         let (vectors, tail) = reviero::utils::as_simd_f32s::<S>(self.0);
+//!         let (vectors, tail) = reviero::utils::as_simd_f32s(&simd, self.0);
 //!         let mut sum = simd.splat_f32s(0.0);
 //!
 //!         for vector in vectors {
@@ -88,7 +88,7 @@ impl Backend {
         {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             {
-                if is_x86_feature_detected!("avx512f") && is_x86_feature_detected!("fma") {
+                if is_x86_feature_detected!("avx512f") {
                     return Backend::Avx512f;
                 } else if is_x86_feature_detected!("avx2") && is_x86_feature_detected!("fma") {
                     return Backend::Avx2Fma;

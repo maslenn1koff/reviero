@@ -466,43 +466,9 @@ impl SimdReduceOps for Neon {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::backend::test_utils::{Check, Run};
-    use crate::traits::SimdTypes;
-
-    fn run(check: Check) {
-        unsafe { vectorize(Run(check)) };
-    }
-
-    #[test]
-    fn lanes() {
-        assert_eq!(Neon::f32s_lanes, 4);
-        assert_eq!(Neon::f64s_lanes, 2);
-    }
-
-    #[test]
-    fn io() {
-        run(Check::Io);
-    }
-
-    #[test]
-    fn float_ops() {
-        run(Check::Float);
-    }
-
-    #[test]
-    fn mask_ops() {
-        run(Check::Mask);
-    }
-
-    #[test]
-    fn bit_ops() {
-        run(Check::Bits);
-    }
-
-    #[test]
-    fn reduce_ops() {
-        run(Check::Reduce);
-    }
+fn run(check: crate::backend::test_utils::Check) {
+    unsafe { vectorize(crate::backend::test_utils::Run(check)) };
 }
+
+#[cfg(test)]
+crate::backend_tests!(Neon, 4, 2);
