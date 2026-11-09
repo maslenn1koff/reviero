@@ -59,22 +59,24 @@ mod backend;
 pub mod traits;
 pub mod utils;
 
-#[cfg(not(target_arch = "aarch64"))]
-use crate::backend::fallback::Fallback;
 use crate::traits::Simd;
-use std::sync::LazyLock;
+use std::sync::atomic::{AtomicU8, Ordering};
 
+static BACKEND: AtomicU8 = AtomicU8::new(0);
+
+#[repr(u8)]
+#[derive(Clone, Copy)]
 enum Backend {
     #[cfg(not(target_arch = "aarch64"))]
-    Fallback,
+    Fallback = 1,
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    Sse2,
+    Sse2 = 2,
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    Avx2Fma,
+    Avx2Fma = 3,
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    Avx512f,
+    Avx512f = 4,
     #[cfg(target_arch = "aarch64")]
-    Neon,
+    Neon = 5,
 }
 
 impl Backend {
@@ -88,7 +90,7 @@ impl Backend {
         {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             {
-                if is_x86_feature_detected!("avx512f") {
+                if is_x86_feature_detected!("avx512f") && is_x86_feature_detected!("fma") {
                     return Backend::Avx512f;
                 } else if is_x86_feature_detected!("avx2") && is_x86_feature_detected!("fma") {
                     return Backend::Avx2Fma;
@@ -101,8 +103,6 @@ impl Backend {
         }
     }
 }
-
-static BACKEND: LazyLock<Backend> = LazyLock::new(Backend::new);
 
 /// A SIMD operation that [`dispatch`] can run on the best available backend.
 ///
@@ -121,6 +121,14 @@ pub trait SimdFn {
     fn call<S: Simd>(self, simd: S) -> Self::Result;
 }
 
+#[cold]
+#[inline(never)]
+fn detect_backend() -> u8 {
+    let backend = Backend::new() as u8;
+    BACKEND.store(backend, Ordering::Relaxed);
+    backend
+}
+
 /// Runs `op` using the best SIMD backend supported by the current CPU.
 ///
 /// The backend is detected once and then reused. On x86/x86_64 the preference
@@ -128,16 +136,26 @@ pub trait SimdFn {
 /// the NEON backend is used.
 #[inline(always)]
 pub fn dispatch<Op: SimdFn>(op: Op) -> Op::Result {
-    match &*BACKEND {
-        #[cfg(not(target_arch = "aarch64"))]
-        Backend::Fallback => op.call(Fallback),
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        Backend::Sse2 => unsafe { backend::x86::sse2::vectorize(op) },
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        Backend::Avx2Fma => unsafe { backend::x86::avx2::vectorize(op) },
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        Backend::Avx512f => unsafe { backend::x86::avx512::vectorize(op) },
-        #[cfg(target_arch = "aarch64")]
-        Backend::Neon => unsafe { backend::aarch64::neon::vectorize(op) },
+    let backend = match BACKEND.load(Ordering::Relaxed) {
+        0 => detect_backend(),
+        backend => backend,
+    };
+
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    {
+        if backend == Backend::Avx2Fma as u8 {
+            return unsafe { crate::backend::x86::avx2::vectorize(op) };
+        } else if backend == Backend::Avx512f as u8 {
+            return unsafe { crate::backend::x86::avx512::vectorize(op) };
+        } else if backend == Backend::Sse2 as u8 {
+            return unsafe { crate::backend::x86::sse2::vectorize(op) };
+        }
     }
+
+    #[cfg(target_arch = "aarch64")]
+    if backend == Backend::Neon as u8 {
+        return unsafe { crate::backend::aarch64::neon::vectorize(op) };
+    }
+
+    op.call(crate::backend::fallback::Fallback)
 }
