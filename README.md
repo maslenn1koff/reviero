@@ -62,3 +62,25 @@ fn main() {
 ### Runtime Dispatch
 
 `reviero::dispatch()` automatically selects an appropriate SIMD implementation based on the capabilities of the current CPU.
+
+## Benchmarks
+
+Criterion dot-product benchmarks on an Intel Core i5-12600H. Each chart compares `reviero`, `pulp`, `wide`, and `scalar` across `f32` and `f64` inputs, from 513 to 1,048,576 elements.
+
+### Throughput
+
+Higher is better. Throughput is shown in billions of elements per second (Gelem/s).
+
+| With `target-cpu=native` | Without `target-cpu=native` |
+|:--:|:--:|
+| ![Dot-product throughput with target-cpu=native](assets/dot-product-benchmarks.svg) | ![Dot-product throughput without target-cpu=native](assets/dot-product-benchmarks-no-native.svg) |
+
+### Execution time
+
+Lower is better. Median execution time is shown in microseconds on a logarithmic scale.
+
+| With `target-cpu=native` | Without `target-cpu=native` |
+|:--:|:--:|
+| ![Dot-product execution time with target-cpu=native](assets/dot-product-latency.svg) | ![Dot-product execution time without target-cpu=native](assets/dot-product-latency-no-native.svg) |
+
+The native run uses `RUSTFLAGS="-C target-cpu=native"`; the default-target run does not set `target-cpu`. See the raw Criterion output for the [native run](assets/raw_bench.i5-12600h.txt) and the [default-target run](assets/raw_bench_no_native.i5-12600h.txt).

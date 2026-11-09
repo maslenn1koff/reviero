@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+<style>
+          text { font-family: Inter, "Segoe UI", Arial, sans-serif; fill: #111; }
+          .muted { fill: #666; }
+          .grid { stroke: #e9e9e9; stroke-width: 1; }
+          .axis { stroke: #111; stroke-width: 1.25; }
+        </style>
+        <rect width="1600" height="900" fill="#fff"/>
+<text x="96" y="58" font-size="13" font-weight="650" letter-spacing="2" class="muted">CRITERION BENCHMARK · INTEL CORE i5-12600H · WITH TARGET-CPU=NATIVE</text>
+<text x="96" y="112" font-size="38" font-weight="700" letter-spacing="-1.5">SIMD dot product</text>
+<text x="96" y="148" font-size="17" class="muted">Throughput by input vector length · higher is better</text>
+<text x="164" y="220" font-size="21" font-weight="700">f32</text>
+<line x1="164" y1="675.0" x2="762" y2="675.0" class="grid"/>
+<text x="151" y="680.0" font-size="13" text-anchor="end" class="muted">0</text>
+<line x1="164" y1="573.8" x2="762" y2="573.8" class="grid"/>
+<text x="151" y="578.8" font-size="13" text-anchor="end" class="muted">10</text>
+<line x1="164" y1="472.5" x2="762" y2="472.5" class="grid"/>
+<text x="151" y="477.5" font-size="13" text-anchor="end" class="muted">20</text>
+<line x1="164" y1="371.2" x2="762" y2="371.2" class="grid"/>
+<text x="151" y="376.2" font-size="13" text-anchor="end" class="muted">30</text>
+<line x1="164" y1="270.0" x2="762" y2="270.0" class="grid"/>
+<text x="151" y="275.0" font-size="13" text-anchor="end" class="muted">40</text>
+<line x1="164.0" y1="270" x2="164.0" y2="675" class="grid"/>
+<text x="164.0" y="700" font-size="12" text-anchor="middle" class="muted">513</text>
+<line x1="218.5" y1="270" x2="218.5" y2="675" class="grid"/>
+<text x="218.5" y="700" font-size="12" text-anchor="middle" class="muted">1,027</text>
+<line x1="327.0" y1="270" x2="327.0" y2="675" class="grid"/>
+<text x="327.0" y="700" font-size="12" text-anchor="middle" class="muted">4,099</text>
+<line x1="397.1" y1="270" x2="397.1" y2="675" class="grid"/>
+<text x="397.1" y="700" font-size="12" text-anchor="middle" class="muted">10,007</text>
+<line x1="762.0" y1="270" x2="762.0" y2="675" class="grid"/>
+<text x="762.0" y="700" font-size="12" text-anchor="middle" class="muted">1,048,576</text>
+<line x1="164" y1="270" x2="164" y2="675" class="axis"/>
+<line x1="164" y1="675" x2="762" y2="675" class="axis"/>
+<text x="463.0" y="732" font-size="14" text-anchor="middle" class="muted">Vector length (elements)</text>
+<text x="111" y="472.5" font-size="14" text-anchor="middle" class="muted" transform="rotate(-90 111 472.5)">Throughput (Gelem/s)</text>
+<path d="M 164.00 399.26 L 218.45 372.18 L 327.04 320.56 L 397.06 499.42 L 762.00 566.50" fill="none" stroke="#2463EB" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="data-point" cx="164.00" cy="399.26" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="218.45" cy="372.18" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="327.04" cy="320.56" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="397.06" cy="499.42" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="762.00" cy="566.50" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<path d="M 164.00 476.28 L 218.45 487.05 L 327.04 456.69 L 397.06 510.99 L 762.00 578.49" fill="none" stroke="#E4572E" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="data-point" cx="164.00" cy="476.28" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="218.45" cy="487.05" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="327.04" cy="456.69" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="397.06" cy="510.99" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="762.00" cy="578.49" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<path d="M 164.00 410.94 L 218.45 406.73 L 327.04 372.10 L 397.06 510.86 L 762.00 577.07" fill="none" stroke="#8B5CF6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="data-point" cx="164.00" cy="410.94" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="218.45" cy="406.73" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="327.04" cy="372.10" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="397.06" cy="510.86" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="762.00" cy="577.07" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<path d="M 164.00 650.22 L 218.45 651.28 L 327.04 652.08 L 397.06 652.23 L 762.00 652.41" fill="none" stroke="#159D78" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="data-point" cx="164.00" cy="650.22" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="218.45" cy="651.28" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="327.04" cy="652.08" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="397.06" cy="652.23" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="762.00" cy="652.41" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<text x="890" y="220" font-size="21" font-weight="700">f64</text>
+<line x1="890" y1="675.0" x2="1488" y2="675.0" class="grid"/>
+<text x="877" y="680.0" font-size="13" text-anchor="end" class="muted">0</text>
+<line x1="890" y1="573.8" x2="1488" y2="573.8" class="grid"/>
+<text x="877" y="578.8" font-size="13" text-anchor="end" class="muted">5</text>
+<line x1="890" y1="472.5" x2="1488" y2="472.5" class="grid"/>
+<text x="877" y="477.5" font-size="13" text-anchor="end" class="muted">10</text>
+<line x1="890" y1="371.2" x2="1488" y2="371.2" class="grid"/>
+<text x="877" y="376.2" font-size="13" text-anchor="end" class="muted">15</text>
+<line x1="890" y1="270.0" x2="1488" y2="270.0" class="grid"/>
+<text x="877" y="275.0" font-size="13" text-anchor="end" class="muted">20</text>
+<line x1="890.0" y1="270" x2="890.0" y2="675" class="grid"/>
+<text x="890.0" y="700" font-size="12" text-anchor="middle" class="muted">513</text>
+<line x1="944.5" y1="270" x2="944.5" y2="675" class="grid"/>
+<text x="944.5" y="700" font-size="12" text-anchor="middle" class="muted">1,027</text>
+<line x1="1053.0" y1="270" x2="1053.0" y2="675" class="grid"/>
+<text x="1053.0" y="700" font-size="12" text-anchor="middle" class="muted">4,099</text>
+<line x1="1123.1" y1="270" x2="1123.1" y2="675" class="grid"/>
+<text x="1123.1" y="700" font-size="12" text-anchor="middle" class="muted">10,007</text>
+<line x1="1488.0" y1="270" x2="1488.0" y2="675" class="grid"/>
+<text x="1488.0" y="700" font-size="12" text-anchor="middle" class="muted">1,048,576</text>
+<line x1="890" y1="270" x2="890" y2="675" class="axis"/>
+<line x1="890" y1="675" x2="1488" y2="675" class="axis"/>
+<text x="1189.0" y="732" font-size="14" text-anchor="middle" class="muted">Vector length (elements)</text>
+<text x="837" y="472.5" font-size="14" text-anchor="middle" class="muted" transform="rotate(-90 837 472.5)">Throughput (Gelem/s)</text>
+<path d="M 890.00 369.61 L 944.45 330.24 L 1053.04 498.10 L 1123.06 452.13 L 1488.00 589.04" fill="none" stroke="#2463EB" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="data-point" cx="890.00" cy="369.61" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="944.45" cy="330.24" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1053.04" cy="498.10" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1123.06" cy="452.13" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1488.00" cy="589.04" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<path d="M 890.00 477.20 L 944.45 463.39 L 1053.04 511.34 L 1123.06 458.87 L 1488.00 600.12" fill="none" stroke="#E4572E" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="data-point" cx="890.00" cy="477.20" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="944.45" cy="463.39" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1053.04" cy="511.34" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1123.06" cy="458.87" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1488.00" cy="600.12" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<path d="M 890.00 438.08 L 944.45 410.37 L 1053.04 509.95 L 1123.06 452.11 L 1488.00 596.12" fill="none" stroke="#8B5CF6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="data-point" cx="890.00" cy="438.08" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="944.45" cy="410.37" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1053.04" cy="509.95" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1123.06" cy="452.11" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1488.00" cy="596.12" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<path d="M 890.00 625.61 L 944.45 627.72 L 1053.04 629.29 L 1123.06 629.46 L 1488.00 635.63" fill="none" stroke="#159D78" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="data-point" cx="890.00" cy="625.61" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="944.45" cy="627.72" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1053.04" cy="629.29" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1123.06" cy="629.46" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1488.00" cy="635.63" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<line x1="520" y1="795" x2="545" y2="795" stroke="#2463EB" stroke-width="3.5"/>
+<circle cx="532.5" cy="795" r="5" fill="#2463EB" stroke="#fff" stroke-width="1.5"/>
+<text x="555" y="800" font-size="15" font-weight="550">reviero</text>
+<line x1="710" y1="795" x2="735" y2="795" stroke="#E4572E" stroke-width="3.5"/>
+<circle cx="722.5" cy="795" r="5" fill="#E4572E" stroke="#fff" stroke-width="1.5"/>
+<text x="745" y="800" font-size="15" font-weight="550">pulp</text>
+<line x1="860" y1="795" x2="885" y2="795" stroke="#8B5CF6" stroke-width="3.5"/>
+<circle cx="872.5" cy="795" r="5" fill="#8B5CF6" stroke="#fff" stroke-width="1.5"/>
+<text x="895" y="800" font-size="15" font-weight="550">wide</text>
+<line x1="1010" y1="795" x2="1035" y2="795" stroke="#159D78" stroke-width="3.5"/>
+<circle cx="1022.5" cy="795" r="5" fill="#159D78" stroke="#fff" stroke-width="1.5"/>
+<text x="1045" y="800" font-size="15" font-weight="550">scalar</text>
+<line x1="96" y1="842" x2="1504" y2="842" stroke="#eee"/>
+<text x="96" y="870" font-size="12" class="muted">Median Criterion throughput · Gelem/s</text>
+</svg>

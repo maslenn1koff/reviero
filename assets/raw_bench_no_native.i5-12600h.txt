@@ -1,0 +1,304 @@
+# Processor (CPU): i5-12600h
+
+core@fedora:~/Projects/reviero/reviero$ cargo bench --bench dot
+   Compiling reviero v0.1.1 (/home/core/Projects/reviero/reviero)
+    Finished `bench` profile [optimized] target(s) in 6.55s
+     Running benches/dot.rs (target/release/deps/dot-a44cd05adb0751b8)
+Gnuplot not found, using plotters backend
+dot_f32/reviero/513     time:   [19.560 ns 20.245 ns 21.264 ns]
+                        thrpt:  [24.125 Gelem/s 25.340 Gelem/s 26.227 Gelem/s]
+                 change:
+                        time:   [+12.823% +16.359% +20.593%] (p = 0.00 < 0.05)
+                        thrpt:  [−17.077% −14.059% −11.365%]
+                        Performance has regressed.
+dot_f32/pulp/513        time:   [25.811 ns 25.868 ns 25.932 ns]
+                        thrpt:  [19.782 Gelem/s 19.832 Gelem/s 19.875 Gelem/s]
+                 change:
+                        time:   [−1.1287% −0.6586% −0.1775%] (p = 0.01 < 0.05)
+                        thrpt:  [+0.1778% +0.6630% +1.1416%]
+                        Change within noise threshold.
+Found 2 outliers among 30 measurements (6.67%)
+  1 (3.33%) high mild
+  1 (3.33%) high severe
+dot_f32/wide/513        time:   [32.388 ns 32.617 ns 32.857 ns]
+                        thrpt:  [15.613 Gelem/s 15.728 Gelem/s 15.839 Gelem/s]
+                 change:
+                        time:   [+65.351% +66.669% +68.177%] (p = 0.00 < 0.05)
+                        thrpt:  [−40.539% −40.001% −39.523%]
+                        Performance has regressed.
+Found 3 outliers among 30 measurements (10.00%)
+  3 (10.00%) high mild
+dot_f32/scalar/513      time:   [205.37 ns 207.61 ns 209.62 ns]
+                        thrpt:  [2.4472 Gelem/s 2.4710 Gelem/s 2.4980 Gelem/s]
+                 change:
+                        time:   [−3.1289% −2.3061% −1.4938%] (p = 0.00 < 0.05)
+                        thrpt:  [+1.5165% +2.3605% +3.2299%]
+                        Performance has improved.
+dot_f32/reviero/1027    time:   [40.611 ns 40.738 ns 40.877 ns]
+                        thrpt:  [25.124 Gelem/s 25.210 Gelem/s 25.288 Gelem/s]
+                 change:
+                        time:   [+18.286% +18.658% +19.022%] (p = 0.00 < 0.05)
+                        thrpt:  [−15.982% −15.724% −15.459%]
+                        Performance has regressed.
+dot_f32/pulp/1027       time:   [55.045 ns 55.213 ns 55.379 ns]
+                        thrpt:  [18.545 Gelem/s 18.601 Gelem/s 18.657 Gelem/s]
+                 change:
+                        time:   [−0.5613% −0.1827% +0.2497%] (p = 0.40 > 0.05)
+                        thrpt:  [−0.2490% +0.1830% +0.5644%]
+                        No change in performance detected.
+Found 2 outliers among 30 measurements (6.67%)
+  1 (3.33%) low mild
+  1 (3.33%) high mild
+dot_f32/wide/1027       time:   [63.207 ns 63.342 ns 63.510 ns]
+                        thrpt:  [16.171 Gelem/s 16.214 Gelem/s 16.248 Gelem/s]
+                 change:
+                        time:   [+61.307% +63.295% +65.299%] (p = 0.00 < 0.05)
+                        thrpt:  [−39.504% −38.761% −38.006%]
+                        Performance has regressed.
+Found 2 outliers among 30 measurements (6.67%)
+  2 (6.67%) high severe
+dot_f32/scalar/1027     time:   [440.86 ns 441.94 ns 443.10 ns]
+                        thrpt:  [2.3178 Gelem/s 2.3238 Gelem/s 2.3295 Gelem/s]
+                 change:
+                        time:   [+0.1312% +0.4445% +0.7505%] (p = 0.01 < 0.05)
+                        thrpt:  [−0.7449% −0.4425% −0.1310%]
+                        Change within noise threshold.
+dot_f32/reviero/4099    time:   [148.23 ns 148.70 ns 149.25 ns]
+                        thrpt:  [27.463 Gelem/s 27.565 Gelem/s 27.652 Gelem/s]
+                 change:
+                        time:   [+27.241% +27.689% +28.192%] (p = 0.00 < 0.05)
+                        thrpt:  [−21.992% −21.685% −21.409%]
+                        Performance has regressed.
+dot_f32/pulp/4099       time:   [195.55 ns 196.23 ns 197.00 ns]
+                        thrpt:  [20.807 Gelem/s 20.888 Gelem/s 20.961 Gelem/s]
+                 change:
+                        time:   [+2.9371% +3.2873% +3.6123%] (p = 0.00 < 0.05)
+                        thrpt:  [−3.4863% −3.1827% −2.8533%]
+                        Performance has regressed.
+dot_f32/wide/4099       time:   [243.37 ns 244.22 ns 245.03 ns]
+                        thrpt:  [16.729 Gelem/s 16.784 Gelem/s 16.842 Gelem/s]
+                 change:
+                        time:   [+77.782% +78.843% +79.889%] (p = 0.00 < 0.05)
+                        thrpt:  [−44.410% −44.085% −43.751%]
+                        Performance has regressed.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) high mild
+dot_f32/scalar/4099     time:   [1.8583 µs 1.8698 µs 1.8816 µs]
+                        thrpt:  [2.1785 Gelem/s 2.1922 Gelem/s 2.2058 Gelem/s]
+                 change:
+                        time:   [+2.2507% +2.7941% +3.3486%] (p = 0.00 < 0.05)
+                        thrpt:  [−3.2401% −2.7182% −2.2011%]
+                        Performance has regressed.
+dot_f32/reviero/10007   time:   [469.78 ns 471.09 ns 472.55 ns]
+                        thrpt:  [21.176 Gelem/s 21.242 Gelem/s 21.301 Gelem/s]
+                 change:
+                        time:   [−18.474% −18.247% −18.026%] (p = 0.00 < 0.05)
+                        thrpt:  [+21.991% +22.319% +22.660%]
+                        Performance has improved.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) high mild
+dot_f32/pulp/10007      time:   [490.77 ns 492.14 ns 493.31 ns]
+                        thrpt:  [20.285 Gelem/s 20.333 Gelem/s 20.390 Gelem/s]
+                 change:
+                        time:   [−20.593% −20.368% −20.150%] (p = 0.00 < 0.05)
+                        thrpt:  [+25.235% +25.578% +25.933%]
+                        Performance has improved.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) low mild
+dot_f32/wide/10007      time:   [763.84 ns 771.55 ns 777.06 ns]
+                        thrpt:  [12.878 Gelem/s 12.970 Gelem/s 13.101 Gelem/s]
+                 change:
+                        time:   [+22.675% +23.507% +24.266%] (p = 0.00 < 0.05)
+                        thrpt:  [−19.527% −19.033% −18.484%]
+                        Performance has regressed.
+dot_f32/scalar/10007    time:   [4.6184 µs 4.6350 µs 4.6575 µs]
+                        thrpt:  [2.1486 Gelem/s 2.1590 Gelem/s 2.1668 Gelem/s]
+                 change:
+                        time:   [+4.7590% +5.8758% +6.9400%] (p = 0.00 < 0.05)
+                        thrpt:  [−6.4896% −5.5497% −4.5428%]
+                        Performance has regressed.
+dot_f32/reviero/1048576 time:   [122.94 µs 123.20 µs 123.45 µs]
+                        thrpt:  [8.4938 Gelem/s 8.5113 Gelem/s 8.5293 Gelem/s]
+                 change:
+                        time:   [+25.563% +26.257% +27.080%] (p = 0.00 < 0.05)
+                        thrpt:  [−21.310% −20.796% −20.358%]
+                        Performance has regressed.
+Found 3 outliers among 30 measurements (10.00%)
+  2 (6.67%) high mild
+  1 (3.33%) high severe
+dot_f32/pulp/1048576    time:   [143.28 µs 147.53 µs 153.06 µs]
+                        thrpt:  [6.8509 Gelem/s 7.1076 Gelem/s 7.3184 Gelem/s]
+                 change:
+                        time:   [+29.147% +32.140% +35.300%] (p = 0.00 < 0.05)
+                        thrpt:  [−26.090% −24.323% −22.569%]
+                        Performance has regressed.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) high mild
+dot_f32/wide/1048576    time:   [142.18 µs 144.47 µs 147.28 µs]
+                        thrpt:  [7.1194 Gelem/s 7.2582 Gelem/s 7.3752 Gelem/s]
+                 change:
+                        time:   [+35.710% +39.226% +43.097%] (p = 0.00 < 0.05)
+                        thrpt:  [−30.117% −28.174% −26.313%]
+                        Performance has regressed.
+dot_f32/scalar/1048576  time:   [482.06 µs 484.18 µs 486.35 µs]
+                        thrpt:  [2.1560 Gelem/s 2.1657 Gelem/s 2.1752 Gelem/s]
+                 change:
+                        time:   [+2.2705% +2.8477% +3.4297%] (p = 0.00 < 0.05)
+                        thrpt:  [−3.3160% −2.7689% −2.2201%]
+                        Performance has regressed.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) high mild
+
+dot_f64/reviero/513     time:   [37.600 ns 39.649 ns 42.476 ns]
+                        thrpt:  [12.077 Gelem/s 12.938 Gelem/s 13.644 Gelem/s]
+                 change:
+                        time:   [+10.197% +12.558% +15.911%] (p = 0.00 < 0.05)
+                        thrpt:  [−13.727% −11.157% −9.2533%]
+                        Performance has regressed.
+Found 5 outliers among 30 measurements (16.67%)
+  1 (3.33%) high mild
+  4 (13.33%) high severe
+dot_f64/pulp/513        time:   [52.935 ns 53.133 ns 53.373 ns]
+                        thrpt:  [9.6116 Gelem/s 9.6551 Gelem/s 9.6911 Gelem/s]
+                 change:
+                        time:   [+1.9897% +3.2983% +4.7266%] (p = 0.00 < 0.05)
+                        thrpt:  [−4.5133% −3.1930% −1.9508%]
+                        Performance has regressed.
+Found 4 outliers among 30 measurements (13.33%)
+  1 (3.33%) low severe
+  3 (10.00%) high mild
+dot_f64/wide/513        time:   [72.354 ns 72.517 ns 72.731 ns]
+                        thrpt:  [7.0534 Gelem/s 7.0742 Gelem/s 7.0902 Gelem/s]
+                 change:
+                        time:   [+66.405% +68.727% +71.434%] (p = 0.00 < 0.05)
+                        thrpt:  [−41.669% −40.733% −39.906%]
+                        Performance has regressed.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) high mild
+dot_f64/scalar/513      time:   [203.77 ns 205.58 ns 207.49 ns]
+                        thrpt:  [2.4724 Gelem/s 2.4954 Gelem/s 2.5175 Gelem/s]
+                 change:
+                        time:   [−2.4816% −1.9448% −1.2902%] (p = 0.00 < 0.05)
+                        thrpt:  [+1.3070% +1.9834% +2.5447%]
+                        Performance has improved.
+dot_f64/reviero/1027    time:   [82.500 ns 83.006 ns 83.620 ns]
+                        thrpt:  [12.282 Gelem/s 12.373 Gelem/s 12.449 Gelem/s]
+                 change:
+                        time:   [+38.134% +38.866% +39.664%] (p = 0.00 < 0.05)
+                        thrpt:  [−28.399% −27.988% −27.607%]
+                        Performance has regressed.
+dot_f64/pulp/1027       time:   [104.53 ns 104.76 ns 105.00 ns]
+                        thrpt:  [9.7813 Gelem/s 9.8032 Gelem/s 9.8246 Gelem/s]
+                 change:
+                        time:   [+6.1473% +6.7897% +7.4247%] (p = 0.00 < 0.05)
+                        thrpt:  [−6.9115% −6.3580% −5.7913%]
+                        Performance has regressed.
+Found 4 outliers among 30 measurements (13.33%)
+  1 (3.33%) low severe
+  1 (3.33%) low mild
+  2 (6.67%) high mild
+dot_f64/wide/1027       time:   [133.24 ns 133.79 ns 134.44 ns]
+                        thrpt:  [7.6392 Gelem/s 7.6760 Gelem/s 7.7081 Gelem/s]
+                 change:
+                        time:   [+69.222% +70.060% +70.893%] (p = 0.00 < 0.05)
+                        thrpt:  [−41.484% −41.197% −40.906%]
+                        Performance has regressed.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) low mild
+dot_f64/scalar/1027     time:   [446.81 ns 450.58 ns 454.69 ns]
+                        thrpt:  [2.2587 Gelem/s 2.2793 Gelem/s 2.2985 Gelem/s]
+                 change:
+                        time:   [+1.2458% +1.9157% +2.6484%] (p = 0.00 < 0.05)
+                        thrpt:  [−2.5800% −1.8797% −1.2305%]
+                        Performance has regressed.
+dot_f64/reviero/4099    time:   [414.02 ns 415.20 ns 416.37 ns]
+                        thrpt:  [9.8446 Gelem/s 9.8723 Gelem/s 9.9004 Gelem/s]
+                 change:
+                        time:   [−11.849% −11.591% −11.317%] (p = 0.00 < 0.05)
+                        thrpt:  [+12.761% +13.111% +13.442%]
+                        Performance has improved.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) high mild
+dot_f64/pulp/4099       time:   [453.93 ns 462.81 ns 470.95 ns]
+                        thrpt:  [8.7037 Gelem/s 8.8567 Gelem/s 9.0300 Gelem/s]
+                 change:
+                        time:   [−11.194% −10.259% −9.1199%] (p = 0.00 < 0.05)
+                        thrpt:  [+10.035% +11.432% +12.605%]
+                        Performance has improved.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) high severe
+dot_f64/wide/4099       time:   [637.58 ns 645.04 ns 655.70 ns]
+                        thrpt:  [6.2514 Gelem/s 6.3546 Gelem/s 6.4290 Gelem/s]
+                 change:
+                        time:   [+30.205% +32.195% +34.131%] (p = 0.00 < 0.05)
+                        thrpt:  [−25.446% −24.354% −23.198%]
+                        Performance has regressed.
+dot_f64/scalar/4099     time:   [1.8802 µs 1.8907 µs 1.9044 µs]
+                        thrpt:  [2.1524 Gelem/s 2.1680 Gelem/s 2.1801 Gelem/s]
+                 change:
+                        time:   [+4.3964% +5.0027% +5.5562%] (p = 0.00 < 0.05)
+                        thrpt:  [−5.2638% −4.7644% −4.2113%]
+                        Performance has regressed.
+dot_f64/reviero/10007   time:   [973.48 ns 989.15 ns 1.0106 µs]
+                        thrpt:  [9.9021 Gelem/s 10.117 Gelem/s 10.280 Gelem/s]
+                 change:
+                        time:   [+8.4679% +10.099% +11.908%] (p = 0.00 < 0.05)
+                        thrpt:  [−10.641% −9.1724% −7.8068%]
+                        Performance has regressed.
+Found 2 outliers among 30 measurements (6.67%)
+  2 (6.67%) high mild
+dot_f64/pulp/10007      time:   [1.2040 µs 1.2098 µs 1.2156 µs]
+                        thrpt:  [8.2322 Gelem/s 8.2717 Gelem/s 8.3114 Gelem/s]
+                 change:
+                        time:   [+28.254% +28.719% +29.207%] (p = 0.00 < 0.05)
+                        thrpt:  [−22.605% −22.312% −22.030%]
+                        Performance has regressed.
+dot_f64/wide/10007      time:   [1.6395 µs 1.6538 µs 1.6754 µs]
+                        thrpt:  [5.9728 Gelem/s 6.0508 Gelem/s 6.1037 Gelem/s]
+                 change:
+                        time:   [+81.214% +82.152% +83.141%] (p = 0.00 < 0.05)
+                        thrpt:  [−45.397% −45.101% −44.817%]
+                        Performance has regressed.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) high severe
+dot_f64/scalar/10007    time:   [4.7724 µs 4.7758 µs 4.7808 µs]
+                        thrpt:  [2.0932 Gelem/s 2.0954 Gelem/s 2.0968 Gelem/s]
+                 change:
+                        time:   [+6.9855% +7.2210% +7.4077%] (p = 0.00 < 0.05)
+                        thrpt:  [−6.8968% −6.7347% −6.5294%]
+                        Performance has regressed.
+Found 4 outliers among 30 measurements (13.33%)
+  2 (6.67%) high mild
+  2 (6.67%) high severe
+dot_f64/reviero/1048576 time:   [422.02 µs 441.05 µs 469.34 µs]
+                        thrpt:  [2.2342 Gelem/s 2.3774 Gelem/s 2.4846 Gelem/s]
+                 change:
+                        time:   [+78.242% +87.381% +97.747%] (p = 0.00 < 0.05)
+                        thrpt:  [−49.430% −46.633% −43.897%]
+                        Performance has regressed.
+Found 2 outliers among 30 measurements (6.67%)
+  2 (6.67%) high mild
+dot_f64/pulp/1048576    time:   [428.38 µs 441.12 µs 460.20 µs]
+                        thrpt:  [2.2785 Gelem/s 2.3771 Gelem/s 2.4478 Gelem/s]
+                 change:
+                        time:   [+49.032% +53.337% +57.863%] (p = 0.00 < 0.05)
+                        thrpt:  [−36.654% −34.784% −32.900%]
+                        Performance has regressed.
+Found 4 outliers among 30 measurements (13.33%)
+  1 (3.33%) low mild
+  1 (3.33%) high mild
+  2 (6.67%) high severe
+dot_f64/wide/1048576    time:   [449.80 µs 462.73 µs 481.90 µs]
+                        thrpt:  [2.1759 Gelem/s 2.2661 Gelem/s 2.3312 Gelem/s]
+                 change:
+                        time:   [+76.497% +82.841% +88.670%] (p = 0.00 < 0.05)
+                        thrpt:  [−46.997% −45.308% −43.342%]
+                        Performance has regressed.
+dot_f64/scalar/1048576  time:   [595.31 µs 597.13 µs 599.65 µs]
+                        thrpt:  [1.7486 Gelem/s 1.7560 Gelem/s 1.7614 Gelem/s]
+                 change:
+                        time:   [+11.283% +12.590% +14.283%] (p = 0.00 < 0.05)
+                        thrpt:  [−12.498% −11.182% −10.139%]
+                        Performance has regressed.
+Found 2 outliers among 30 measurements (6.67%)
+  2 (6.67%) high severe
