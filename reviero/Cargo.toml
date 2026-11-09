@@ -13,3 +13,17 @@ categories = ["algorithms", "hardware-support"]
 
 [dependencies]
 paste = "1"
+
+[dev-dependencies]
+criterion = "0.8"
+pulp = "0.22"
+wide = "1.7"
+
+[[bench]]
+name = "dot"
+harness = false
+
+[profile.bench]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
