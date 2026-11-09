@@ -1,4 +1,3 @@
-#[cfg(any(not(target_arch = "aarch64"), test))]
 pub mod fallback;
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
