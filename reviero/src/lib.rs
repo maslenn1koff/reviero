@@ -60,10 +60,13 @@ pub mod traits;
 pub mod utils;
 
 use crate::traits::Simd;
+#[cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))]
 use std::sync::atomic::{AtomicU8, Ordering};
 
+#[cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))]
 static BACKEND: AtomicU8 = AtomicU8::new(0);
 
+#[cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))]
 #[repr(u8)]
 #[derive(Clone, Copy)]
 enum Backend {
@@ -79,6 +82,7 @@ enum Backend {
     Neon = 5,
 }
 
+#[cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))]
 impl Backend {
     fn new() -> Self {
         #[cfg(target_arch = "aarch64")]
@@ -121,6 +125,7 @@ pub trait SimdFn {
     fn call<S: Simd>(self, simd: S) -> Self::Result;
 }
 
+#[cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))]
 #[cold]
 #[inline(never)]
 fn detect_backend() -> u8 {
@@ -136,6 +141,7 @@ fn detect_backend() -> u8 {
 /// the NEON backend is used.
 #[inline(always)]
 pub fn dispatch<Op: SimdFn>(op: Op) -> Op::Result {
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))]
     let backend = match BACKEND.load(Ordering::Relaxed) {
         0 => detect_backend(),
         backend => backend,
