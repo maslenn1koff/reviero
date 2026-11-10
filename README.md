@@ -7,6 +7,12 @@
 
 `reviero` provides portable SIMD operations with runtime CPU dispatch, allowing the same code to run across different architectures and instruction sets.
 
+## Project Archived
+
+This project is no longer actively maintained.
+
+See new repository: **[katar](https://github.com/maslenn1koff/katar)**
+
 ## Installation
 
 Add `reviero` to your `Cargo.toml`:
