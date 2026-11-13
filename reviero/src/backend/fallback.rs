@@ -1,31 +1,31 @@
-use crate::traits::{SimdBitOps, SimdFloatOps, SimdIo, SimdMask, SimdMaskOps, SimdReduceOps, SimdTypes};
+use crate::traits::{Float, Simd, SimdMask};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 macro_rules! define_io_ops {
     ($ty:ident) => {
         paste::paste! {
             #[inline(always)]
-            fn [<splat_ $ty s>](self, value: $ty) -> Self::[<$ty s>] {
+            fn [<splat_ $ty>](self, value: $ty) -> Self::[<$ty>] {
                 value
             }
 
             #[inline(always)]
-            fn [<load_ $ty s>](self, src: &[$ty]) -> Self::[<$ty s>] {
+            fn [<load_ $ty>](self, src: &[$ty]) -> Self::[<$ty>] {
                 src[0]
             }
 
             #[inline(always)]
-            fn [<store_ $ty s>](self, dst: &mut [$ty], value: Self::[<$ty s>]) {
+            fn [<store_ $ty>](self, dst: &mut [$ty], value: Self::[<$ty>]) {
                 dst[0] = value;
             }
 
             #[inline(always)]
-            unsafe fn [<load_unchecked_ $ty s>](self, src: &[$ty]) -> Self::[<$ty s>] {
+            unsafe fn [<load_unchecked_ $ty>](self, src: &[$ty]) -> Self::[<$ty>] {
                 src[0]
             }
 
             #[inline(always)]
-            unsafe fn [<store_unchecked_ $ty s>](self, dst: &mut [$ty], value: Self::[<$ty s>]) {
+            unsafe fn [<store_unchecked_ $ty>](self, dst: &mut [$ty], value: Self::[<$ty>]) {
                 dst[0] = value;
             }
         }
@@ -37,7 +37,7 @@ macro_rules! define_unary_ops {
         paste::paste! {
             $(
                 #[inline(always)]
-                fn [<$name _ $ty s>](self, a: Self::[<$ty s>]) -> Self::[<$ty s>] {
+                fn [<$name _ $ty>](self, a: Self::[<$ty>]) -> Self::[<$ty>] {
                     a.[<$name>]()
                 }
             )*
@@ -50,7 +50,7 @@ macro_rules! define_binary_ops {
         paste::paste! {
             $(
                 #[inline(always)]
-                fn [<$name _ $ty s>](self, a: Self::[<$ty s>], b: Self::[<$ty s>]) -> Self::[<$ty s>] {
+                fn [<$name _ $ty>](self, a: Self::[<$ty>], b: Self::[<$ty>]) -> Self::[<$ty>] {
                     a.[<$name>](b)
                 }
             )*
@@ -62,22 +62,22 @@ macro_rules! define_ternary_ops {
     ($ty:ident) => {
         paste::paste! {
             #[inline(always)]
-            fn [<mul_add _ $ty s>](self, a: Self::[<$ty s>], b: Self::[<$ty s>], c: Self::[<$ty s>]) -> Self::[<$ty s>] {
+            fn [<mul_add _ $ty>](self, a: Self::[<$ty>], b: Self::[<$ty>], c: Self::[<$ty>]) -> Self::[<$ty>] {
                 a * b + c
             }
 
             #[inline(always)]
-            fn [<mul_sub _ $ty s>](self, a: Self::[<$ty s>], b: Self::[<$ty s>], c: Self::[<$ty s>]) -> Self::[<$ty s>] {
+            fn [<mul_sub _ $ty>](self, a: Self::[<$ty>], b: Self::[<$ty>], c: Self::[<$ty>]) -> Self::[<$ty>] {
                 a * b - c
             }
 
             #[inline(always)]
-            fn [<nmul_add _ $ty s>](self, a: Self::[<$ty s>], b: Self::[<$ty s>], c: Self::[<$ty s>]) -> Self::[<$ty s>] {
+            fn [<nmul_add _ $ty>](self, a: Self::[<$ty>], b: Self::[<$ty>], c: Self::[<$ty>]) -> Self::[<$ty>] {
                 -(a * b) + c
             }
 
             #[inline(always)]
-            fn [<nmul_sub _ $ty s>](self, a: Self::[<$ty s>], b: Self::[<$ty s>], c: Self::[<$ty s>]) -> Self::[<$ty s>] {
+            fn [<nmul_sub _ $ty>](self, a: Self::[<$ty>], b: Self::[<$ty>], c: Self::[<$ty>]) -> Self::[<$ty>] {
                 -(a * b) - c
             }
         }
@@ -89,7 +89,7 @@ macro_rules! define_compare_ops {
         paste::paste! {
             $(
                 #[inline(always)]
-                fn [<$name _ $ty s>](self, a: Self::[<$ty s>], b: Self::[<$ty s>]) -> Self::[<$mask>] {
+                fn [<$name _ $ty>](self, a: Self::[<$ty>], b: Self::[<$ty>]) -> Self::[<$mask>] {
                     FallbackMask(a.[<$name>](&b))
                 }
             )*
@@ -101,27 +101,27 @@ macro_rules! define_bit_ops {
     ($ty:ident) => {
         paste::paste! {
             #[inline(always)]
-            fn [<bitand_ $ty s>](self, a: $ty, b: $ty) -> $ty {
+            fn [<bitand_ $ty>](self, a: $ty, b: $ty) -> $ty {
                 <$ty>::from_bits(a.to_bits() & b.to_bits())
             }
 
             #[inline(always)]
-            fn [<bitandnot_ $ty s>](self, a: $ty, b: $ty) -> $ty {
+            fn [<bitandnot_ $ty>](self, a: $ty, b: $ty) -> $ty {
                 <$ty>::from_bits(!a.to_bits() & b.to_bits())
             }
 
             #[inline(always)]
-            fn [<bitor_ $ty s>](self, a: $ty, b: $ty) -> $ty {
+            fn [<bitor_ $ty>](self, a: $ty, b: $ty) -> $ty {
                 <$ty>::from_bits(a.to_bits() | b.to_bits())
             }
 
             #[inline(always)]
-            fn [<bitxor_ $ty s>](self, a: $ty, b: $ty) -> $ty {
+            fn [<bitxor_ $ty>](self, a: $ty, b: $ty) -> $ty {
                 <$ty>::from_bits(a.to_bits() ^ b.to_bits())
             }
 
             #[inline(always)]
-            fn [<bitnot_ $ty s>](self, a: $ty) -> $ty {
+            fn [<bitnot_ $ty>](self, a: $ty) -> $ty {
                 <$ty>::from_bits(!a.to_bits())
             }
         }
@@ -133,7 +133,7 @@ macro_rules! define_reduce_ops {
         paste::paste! {
             $(
                 #[inline(always)]
-                fn [<reduce_ $name _ $ty s>](self, a: $ty) -> $ty {
+                fn [<reduce_ $name _ $ty>](self, a: $ty) -> $ty {
                     a
                 }
             )*
@@ -154,6 +154,21 @@ impl Default for Fallback {
 pub struct FallbackMask(bool);
 
 impl SimdMask for FallbackMask {
+    #[inline(always)]
+    fn splat(v: bool) -> Self {
+        FallbackMask(v)
+    }
+
+    #[inline(always)]
+    fn from_bits(v: u32) -> Self {
+        FallbackMask(v & 1 != 0)
+    }
+
+    #[inline(always)]
+    fn to_bits(self) -> u32 {
+        self.0 as u32
+    }
+
     #[inline(always)]
     fn and(self, other: Self) -> Self {
         FallbackMask(self.0 && other.0)
@@ -180,23 +195,20 @@ impl SimdMask for FallbackMask {
     }
 }
 
-impl SimdTypes for Fallback {
-    type f32s = f32;
-    type f64s = f64;
+impl Float for Fallback {
+    type f32 = f32;
+    type f64 = f64;
 
     type m32s = FallbackMask;
     type m64s = FallbackMask;
 
-    const f32s_lanes: usize = 1;
-    const f64s_lanes: usize = 1;
-}
+    const f32_lanes: usize = 1;
+    const f64_lanes: usize = 1;
+    const m64_lanes: usize = Self::f64_lanes;
 
-impl SimdIo for Fallback {
     define_io_ops!(f32);
     define_io_ops!(f64);
-}
 
-impl SimdFloatOps for Fallback {
     define_unary_ops!(f32, abs, neg, sqrt);
     define_unary_ops!(f64, abs, neg, sqrt);
 
@@ -205,32 +217,28 @@ impl SimdFloatOps for Fallback {
 
     define_ternary_ops!(f32);
     define_ternary_ops!(f64);
-}
 
-impl SimdMaskOps for Fallback {
     define_compare_ops!(f32, m32s, eq, ne, lt, le, gt, ge);
     define_compare_ops!(f64, m64s, eq, ne, lt, le, gt, ge);
 
     #[inline(always)]
-    fn select_f32s(self, mask: Self::m32s, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn select_f32(self, mask: Self::m32s, a: Self::f32, b: Self::f32) -> Self::f32 {
         if mask.0 { a } else { b }
     }
 
     #[inline(always)]
-    fn select_f64s(self, mask: Self::m64s, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn select_f64(self, mask: Self::m64s, a: Self::f64, b: Self::f64) -> Self::f64 {
         if mask.0 { a } else { b }
     }
-}
 
-impl SimdBitOps for Fallback {
     define_bit_ops!(f32);
     define_bit_ops!(f64);
-}
 
-impl SimdReduceOps for Fallback {
     define_reduce_ops!(f32, sum, max, min);
     define_reduce_ops!(f64, sum, max, min);
 }
+
+impl Simd for Fallback {}
 
 #[cfg(test)]
 fn run(check: crate::backend::test_utils::Check) {

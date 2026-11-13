@@ -5,7 +5,7 @@ use std::arch::x86_64::*;
 
 use crate::{
     SimdFn,
-    traits::{SimdBitOps, SimdFloatOps, SimdIo, SimdMask, SimdMaskOps, SimdReduceOps, SimdTypes},
+    traits::{Float, Simd, SimdMask},
 };
 
 /// AVX2 comparison mask for eight `f32` lanes.
@@ -13,6 +13,32 @@ use crate::{
 pub struct AvxMaskF32(__m256);
 
 impl SimdMask for AvxMaskF32 {
+    #[inline(always)]
+    fn splat(v: bool) -> Self {
+        unsafe { Self(_mm256_castsi256_ps(_mm256_set1_epi32(if v { -1 } else { 0 }))) }
+    }
+
+    #[inline(always)]
+    fn from_bits(v: u32) -> Self {
+        unsafe {
+            Self(_mm256_castsi256_ps(_mm256_set_epi32(
+                if v & 128 != 0 { -1 } else { 0 },
+                if v & 64 != 0 { -1 } else { 0 },
+                if v & 32 != 0 { -1 } else { 0 },
+                if v & 16 != 0 { -1 } else { 0 },
+                if v & 8 != 0 { -1 } else { 0 },
+                if v & 4 != 0 { -1 } else { 0 },
+                if v & 2 != 0 { -1 } else { 0 },
+                if v & 1 != 0 { -1 } else { 0 },
+            )))
+        }
+    }
+
+    #[inline(always)]
+    fn to_bits(self) -> u32 {
+        unsafe { _mm256_movemask_ps(self.0) as u32 }
+    }
+
     #[inline(always)]
     fn and(self, other: Self) -> Self {
         unsafe { Self(_mm256_and_ps(self.0, other.0)) }
@@ -44,6 +70,28 @@ impl SimdMask for AvxMaskF32 {
 pub struct AvxMaskF64(__m256d);
 
 impl SimdMask for AvxMaskF64 {
+    #[inline(always)]
+    fn splat(v: bool) -> Self {
+        unsafe { Self(_mm256_castsi256_pd(_mm256_set1_epi64x(if v { -1 } else { 0 }))) }
+    }
+
+    #[inline(always)]
+    fn from_bits(v: u32) -> Self {
+        unsafe {
+            Self(_mm256_castsi256_pd(_mm256_set_epi64x(
+                if v & 8 != 0 { -1 } else { 0 },
+                if v & 4 != 0 { -1 } else { 0 },
+                if v & 2 != 0 { -1 } else { 0 },
+                if v & 1 != 0 { -1 } else { 0 },
+            )))
+        }
+    }
+
+    #[inline(always)]
+    fn to_bits(self) -> u32 {
+        unsafe { _mm256_movemask_pd(self.0) as u32 }
+    }
+
     #[inline(always)]
     fn and(self, other: Self) -> Self {
         unsafe { Self(_mm256_and_pd(self.0, other.0)) }
@@ -84,332 +132,323 @@ pub unsafe fn vectorize<Op: SimdFn>(op: Op) -> Op::Result {
     op.call(Avx2Fma)
 }
 
-impl SimdTypes for Avx2Fma {
-    type f32s = __m256;
-    type f64s = __m256d;
+impl Float for Avx2Fma {
+    type f32 = __m256;
+    type f64 = __m256d;
 
     type m32s = AvxMaskF32;
     type m64s = AvxMaskF64;
 
-    const f32s_lanes: usize = 8;
-    const f64s_lanes: usize = 4;
-}
+    const f32_lanes: usize = 8;
+    const f64_lanes: usize = 4;
+    const m64_lanes: usize = Self::f64_lanes;
 
-impl SimdIo for Avx2Fma {
     #[inline(always)]
-    fn splat_f32s(self, value: f32) -> Self::f32s {
+    fn splat_f32(self, value: f32) -> Self::f32 {
         unsafe { _mm256_set1_ps(value) }
     }
 
     #[inline(always)]
-    fn splat_f64s(self, value: f64) -> Self::f64s {
+    fn splat_f64(self, value: f64) -> Self::f64 {
         unsafe { _mm256_set1_pd(value) }
     }
 
     #[inline(always)]
-    fn load_f32s(self, src: &[f32]) -> Self::f32s {
-        assert!(src.len() >= Self::f32s_lanes);
+    fn load_f32(self, src: &[f32]) -> Self::f32 {
+        assert!(src.len() >= Self::f32_lanes);
         unsafe { _mm256_loadu_ps(src.as_ptr()) }
     }
 
     #[inline(always)]
-    fn load_f64s(self, src: &[f64]) -> Self::f64s {
-        assert!(src.len() >= Self::f64s_lanes);
+    fn load_f64(self, src: &[f64]) -> Self::f64 {
+        assert!(src.len() >= Self::f64_lanes);
         unsafe { _mm256_loadu_pd(src.as_ptr()) }
     }
 
     #[inline(always)]
-    fn store_f32s(self, dst: &mut [f32], value: Self::f32s) {
-        assert!(dst.len() >= Self::f32s_lanes);
+    fn store_f32(self, dst: &mut [f32], value: Self::f32) {
+        assert!(dst.len() >= Self::f32_lanes);
         unsafe { _mm256_storeu_ps(dst.as_mut_ptr(), value) };
     }
 
     #[inline(always)]
-    fn store_f64s(self, dst: &mut [f64], value: Self::f64s) {
-        assert!(dst.len() >= Self::f64s_lanes);
+    fn store_f64(self, dst: &mut [f64], value: Self::f64) {
+        assert!(dst.len() >= Self::f64_lanes);
         unsafe { _mm256_storeu_pd(dst.as_mut_ptr(), value) };
     }
 
     #[inline(always)]
-    unsafe fn load_unchecked_f32s(self, src: &[f32]) -> Self::f32s {
+    unsafe fn load_unchecked_f32(self, src: &[f32]) -> Self::f32 {
         unsafe { _mm256_loadu_ps(src.as_ptr()) }
     }
 
     #[inline(always)]
-    unsafe fn load_unchecked_f64s(self, src: &[f64]) -> Self::f64s {
+    unsafe fn load_unchecked_f64(self, src: &[f64]) -> Self::f64 {
         unsafe { _mm256_loadu_pd(src.as_ptr()) }
     }
 
     #[inline(always)]
-    unsafe fn store_unchecked_f32s(self, dst: &mut [f32], value: Self::f32s) {
+    unsafe fn store_unchecked_f32(self, dst: &mut [f32], value: Self::f32) {
         unsafe { _mm256_storeu_ps(dst.as_mut_ptr(), value) }
     }
 
     #[inline(always)]
-    unsafe fn store_unchecked_f64s(self, dst: &mut [f64], value: Self::f64s) {
+    unsafe fn store_unchecked_f64(self, dst: &mut [f64], value: Self::f64) {
         unsafe { _mm256_storeu_pd(dst.as_mut_ptr(), value) }
     }
-}
 
-impl SimdFloatOps for Avx2Fma {
     #[inline(always)]
-    fn abs_f32s(self, a: Self::f32s) -> Self::f32s {
+    fn abs_f32(self, a: Self::f32) -> Self::f32 {
         unsafe { _mm256_andnot_ps(_mm256_set1_ps(-0.0), a) }
     }
 
     #[inline(always)]
-    fn abs_f64s(self, a: Self::f64s) -> Self::f64s {
+    fn abs_f64(self, a: Self::f64) -> Self::f64 {
         unsafe { _mm256_andnot_pd(_mm256_set1_pd(-0.0), a) }
     }
 
     #[inline(always)]
-    fn add_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn add_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm256_add_ps(a, b) }
     }
 
     #[inline(always)]
-    fn add_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn add_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm256_add_pd(a, b) }
     }
 
     #[inline(always)]
-    fn sub_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn sub_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm256_sub_ps(a, b) }
     }
 
     #[inline(always)]
-    fn sub_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn sub_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm256_sub_pd(a, b) }
     }
 
     #[inline(always)]
-    fn mul_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn mul_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm256_mul_ps(a, b) }
     }
 
     #[inline(always)]
-    fn mul_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn mul_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm256_mul_pd(a, b) }
     }
 
     #[inline(always)]
-    fn div_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn div_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm256_div_ps(a, b) }
     }
 
     #[inline(always)]
-    fn div_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn div_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm256_div_pd(a, b) }
     }
 
     #[inline(always)]
-    fn max_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn max_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm256_max_ps(a, b) }
     }
 
     #[inline(always)]
-    fn max_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn max_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm256_max_pd(a, b) }
     }
 
     #[inline(always)]
-    fn min_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn min_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm256_min_ps(a, b) }
     }
 
     #[inline(always)]
-    fn min_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn min_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm256_min_pd(a, b) }
     }
 
     #[inline(always)]
-    fn neg_f32s(self, a: Self::f32s) -> Self::f32s {
+    fn neg_f32(self, a: Self::f32) -> Self::f32 {
         unsafe { _mm256_xor_ps(a, _mm256_set1_ps(-0.0)) }
     }
 
     #[inline(always)]
-    fn neg_f64s(self, a: Self::f64s) -> Self::f64s {
+    fn neg_f64(self, a: Self::f64) -> Self::f64 {
         unsafe { _mm256_xor_pd(a, _mm256_set1_pd(-0.0)) }
     }
 
     #[inline(always)]
-    fn sqrt_f32s(self, a: Self::f32s) -> Self::f32s {
+    fn sqrt_f32(self, a: Self::f32) -> Self::f32 {
         unsafe { _mm256_sqrt_ps(a) }
     }
 
     #[inline(always)]
-    fn sqrt_f64s(self, a: Self::f64s) -> Self::f64s {
+    fn sqrt_f64(self, a: Self::f64) -> Self::f64 {
         unsafe { _mm256_sqrt_pd(a) }
     }
 
     #[inline(always)]
-    fn mul_add_f32s(self, a: Self::f32s, b: Self::f32s, c: Self::f32s) -> Self::f32s {
+    fn mul_add_f32(self, a: Self::f32, b: Self::f32, c: Self::f32) -> Self::f32 {
         unsafe { _mm256_fmadd_ps(a, b, c) }
     }
 
     #[inline(always)]
-    fn mul_add_f64s(self, a: Self::f64s, b: Self::f64s, c: Self::f64s) -> Self::f64s {
+    fn mul_add_f64(self, a: Self::f64, b: Self::f64, c: Self::f64) -> Self::f64 {
         unsafe { _mm256_fmadd_pd(a, b, c) }
     }
 
     #[inline(always)]
-    fn mul_sub_f32s(self, a: Self::f32s, b: Self::f32s, c: Self::f32s) -> Self::f32s {
+    fn mul_sub_f32(self, a: Self::f32, b: Self::f32, c: Self::f32) -> Self::f32 {
         unsafe { _mm256_fmsub_ps(a, b, c) }
     }
 
     #[inline(always)]
-    fn mul_sub_f64s(self, a: Self::f64s, b: Self::f64s, c: Self::f64s) -> Self::f64s {
+    fn mul_sub_f64(self, a: Self::f64, b: Self::f64, c: Self::f64) -> Self::f64 {
         unsafe { _mm256_fmsub_pd(a, b, c) }
     }
 
     #[inline(always)]
-    fn nmul_add_f32s(self, a: Self::f32s, b: Self::f32s, c: Self::f32s) -> Self::f32s {
+    fn nmul_add_f32(self, a: Self::f32, b: Self::f32, c: Self::f32) -> Self::f32 {
         unsafe { _mm256_fnmadd_ps(a, b, c) }
     }
 
     #[inline(always)]
-    fn nmul_add_f64s(self, a: Self::f64s, b: Self::f64s, c: Self::f64s) -> Self::f64s {
+    fn nmul_add_f64(self, a: Self::f64, b: Self::f64, c: Self::f64) -> Self::f64 {
         unsafe { _mm256_fnmadd_pd(a, b, c) }
     }
 
     #[inline(always)]
-    fn nmul_sub_f32s(self, a: Self::f32s, b: Self::f32s, c: Self::f32s) -> Self::f32s {
+    fn nmul_sub_f32(self, a: Self::f32, b: Self::f32, c: Self::f32) -> Self::f32 {
         unsafe { _mm256_fnmsub_ps(a, b, c) }
     }
 
     #[inline(always)]
-    fn nmul_sub_f64s(self, a: Self::f64s, b: Self::f64s, c: Self::f64s) -> Self::f64s {
+    fn nmul_sub_f64(self, a: Self::f64, b: Self::f64, c: Self::f64) -> Self::f64 {
         unsafe { _mm256_fnmsub_pd(a, b, c) }
     }
-}
 
-impl SimdMaskOps for Avx2Fma {
     #[inline(always)]
-    fn eq_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::m32s {
+    fn eq_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
         unsafe { AvxMaskF32(_mm256_cmp_ps::<_CMP_EQ_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn eq_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::m64s {
+    fn eq_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
         unsafe { AvxMaskF64(_mm256_cmp_pd::<_CMP_EQ_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn ge_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::m32s {
+    fn ge_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
         unsafe { AvxMaskF32(_mm256_cmp_ps::<_CMP_GE_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn ge_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::m64s {
+    fn ge_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
         unsafe { AvxMaskF64(_mm256_cmp_pd::<_CMP_GE_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn gt_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::m32s {
+    fn gt_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
         unsafe { AvxMaskF32(_mm256_cmp_ps::<_CMP_GT_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn gt_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::m64s {
+    fn gt_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
         unsafe { AvxMaskF64(_mm256_cmp_pd::<_CMP_GT_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn le_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::m32s {
+    fn le_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
         unsafe { AvxMaskF32(_mm256_cmp_ps::<_CMP_LE_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn le_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::m64s {
+    fn le_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
         unsafe { AvxMaskF64(_mm256_cmp_pd::<_CMP_LE_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn lt_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::m32s {
+    fn lt_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
         unsafe { AvxMaskF32(_mm256_cmp_ps::<_CMP_LT_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn lt_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::m64s {
+    fn lt_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
         unsafe { AvxMaskF64(_mm256_cmp_pd::<_CMP_LT_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn ne_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::m32s {
+    fn ne_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
         unsafe { AvxMaskF32(_mm256_cmp_ps::<_CMP_NEQ_UQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn ne_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::m64s {
+    fn ne_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
         unsafe { AvxMaskF64(_mm256_cmp_pd::<_CMP_NEQ_UQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn select_f32s(self, mask: Self::m32s, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn select_f32(self, mask: Self::m32s, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm256_blendv_ps(b, a, mask.0) }
     }
 
     #[inline(always)]
-    fn select_f64s(self, mask: Self::m64s, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn select_f64(self, mask: Self::m64s, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm256_blendv_pd(b, a, mask.0) }
     }
-}
 
-impl SimdBitOps for Avx2Fma {
     #[inline(always)]
-    fn bitand_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn bitand_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm256_and_ps(a, b) }
     }
 
     #[inline(always)]
-    fn bitor_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn bitor_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm256_or_ps(a, b) }
     }
 
     #[inline(always)]
-    fn bitxor_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn bitxor_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm256_xor_ps(a, b) }
     }
 
     #[inline(always)]
-    fn bitand_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn bitand_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm256_and_pd(a, b) }
     }
 
     #[inline(always)]
-    fn bitor_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn bitor_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm256_or_pd(a, b) }
     }
 
     #[inline(always)]
-    fn bitxor_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn bitxor_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm256_xor_pd(a, b) }
     }
 
     #[inline(always)]
-    fn bitnot_f32s(self, a: Self::f32s) -> Self::f32s {
+    fn bitnot_f32(self, a: Self::f32) -> Self::f32 {
         unsafe { _mm256_xor_ps(a, _mm256_castsi256_ps(_mm256_set1_epi32(-1))) }
     }
 
     #[inline(always)]
-    fn bitnot_f64s(self, a: Self::f64s) -> Self::f64s {
+    fn bitnot_f64(self, a: Self::f64) -> Self::f64 {
         unsafe { _mm256_xor_pd(a, _mm256_castsi256_pd(_mm256_set1_epi64x(-1))) }
     }
 
     #[inline(always)]
-    fn bitandnot_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn bitandnot_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm256_andnot_ps(a, b) }
     }
 
     #[inline(always)]
-    fn bitandnot_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn bitandnot_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm256_andnot_pd(a, b) }
     }
-}
 
-impl SimdReduceOps for Avx2Fma {
     #[inline(always)]
-    fn reduce_max_f32s(self, a: Self::f32s) -> f32 {
+    fn reduce_max_f32(self, a: Self::f32) -> f32 {
         unsafe {
             let s = _mm_max_ps(_mm256_castps256_ps128(a), _mm256_extractf128_ps::<1>(a));
             let s = _mm_max_ps(s, _mm_movehl_ps(s, s));
@@ -419,7 +458,7 @@ impl SimdReduceOps for Avx2Fma {
     }
 
     #[inline(always)]
-    fn reduce_max_f64s(self, a: Self::f64s) -> f64 {
+    fn reduce_max_f64(self, a: Self::f64) -> f64 {
         unsafe {
             let s = _mm_max_pd(_mm256_castpd256_pd128(a), _mm256_extractf128_pd::<1>(a));
             let s = _mm_max_sd(s, _mm_unpackhi_pd(s, s));
@@ -428,7 +467,7 @@ impl SimdReduceOps for Avx2Fma {
     }
 
     #[inline(always)]
-    fn reduce_min_f32s(self, a: Self::f32s) -> f32 {
+    fn reduce_min_f32(self, a: Self::f32) -> f32 {
         unsafe {
             let s = _mm_min_ps(_mm256_castps256_ps128(a), _mm256_extractf128_ps::<1>(a));
             let s = _mm_min_ps(s, _mm_movehl_ps(s, s));
@@ -438,7 +477,7 @@ impl SimdReduceOps for Avx2Fma {
     }
 
     #[inline(always)]
-    fn reduce_min_f64s(self, a: Self::f64s) -> f64 {
+    fn reduce_min_f64(self, a: Self::f64) -> f64 {
         unsafe {
             let s = _mm_min_pd(_mm256_castpd256_pd128(a), _mm256_extractf128_pd::<1>(a));
             let s = _mm_min_sd(s, _mm_unpackhi_pd(s, s));
@@ -447,7 +486,7 @@ impl SimdReduceOps for Avx2Fma {
     }
 
     #[inline(always)]
-    fn reduce_sum_f32s(self, a: Self::f32s) -> f32 {
+    fn reduce_sum_f32(self, a: Self::f32) -> f32 {
         unsafe {
             let s = _mm_add_ps(_mm256_castps256_ps128(a), _mm256_extractf128_ps::<1>(a));
             let s = _mm_add_ps(s, _mm_movehl_ps(s, s));
@@ -457,7 +496,7 @@ impl SimdReduceOps for Avx2Fma {
     }
 
     #[inline(always)]
-    fn reduce_sum_f64s(self, a: Self::f64s) -> f64 {
+    fn reduce_sum_f64(self, a: Self::f64) -> f64 {
         unsafe {
             let s = _mm_add_pd(_mm256_castpd256_pd128(a), _mm256_extractf128_pd::<1>(a));
             let s = _mm_add_sd(s, _mm_unpackhi_pd(s, s));
@@ -465,6 +504,8 @@ impl SimdReduceOps for Avx2Fma {
         }
     }
 }
+
+impl Simd for Avx2Fma {}
 
 #[cfg(test)]
 fn run(check: crate::backend::test_utils::Check) {

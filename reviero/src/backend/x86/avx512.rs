@@ -5,13 +5,28 @@ use std::arch::x86_64::*;
 
 use crate::{
     SimdFn,
-    traits::{SimdBitOps, SimdFloatOps, SimdIo, SimdMask, SimdMaskOps, SimdReduceOps, SimdTypes},
+    traits::{Float, Simd, SimdMask},
 };
 
 #[derive(Copy, Clone, Debug)]
 pub struct Avx512MaskF32(__mmask16); // 16 bits
 
 impl SimdMask for Avx512MaskF32 {
+    #[inline(always)]
+    fn splat(v: bool) -> Self {
+        Self(if v { u16::MAX } else { 0 })
+    }
+
+    #[inline(always)]
+    fn from_bits(v: u32) -> Self {
+        Self(v as u16)
+    }
+
+    #[inline(always)]
+    fn to_bits(self) -> u32 {
+        self.0 as u32
+    }
+
     #[inline(always)]
     fn and(self, other: Self) -> Self {
         Self(self.0 & other.0)
@@ -42,6 +57,21 @@ impl SimdMask for Avx512MaskF32 {
 pub struct Avx512MaskF64(__mmask8); // 8 bits, all used
 
 impl SimdMask for Avx512MaskF64 {
+    #[inline(always)]
+    fn splat(v: bool) -> Self {
+        Self(if v { u8::MAX } else { 0 })
+    }
+
+    #[inline(always)]
+    fn from_bits(v: u32) -> Self {
+        Self(v as u8)
+    }
+
+    #[inline(always)]
+    fn to_bits(self) -> u32 {
+        self.0 as u32
+    }
+
     #[inline(always)]
     fn and(self, other: Self) -> Self {
         Self(self.0 & other.0)
@@ -115,310 +145,303 @@ pub unsafe fn vectorize<Op: SimdFn>(op: Op) -> Op::Result {
     op.call(Avx512)
 }
 
-impl SimdTypes for Avx512 {
-    type f32s = __m512;
-    type f64s = __m512d;
+impl Float for Avx512 {
+    type f32 = __m512;
+    type f64 = __m512d;
 
     type m32s = Avx512MaskF32;
     type m64s = Avx512MaskF64;
 
-    const f32s_lanes: usize = 16;
-    const f64s_lanes: usize = 8;
-}
+    const f32_lanes: usize = 16;
+    const f64_lanes: usize = 8;
+    const m64_lanes: usize = Self::f64_lanes;
 
-impl SimdIo for Avx512 {
     #[inline(always)]
-    fn splat_f32s(self, value: f32) -> Self::f32s {
+    fn splat_f32(self, value: f32) -> Self::f32 {
         unsafe { _mm512_set1_ps(value) }
     }
 
     #[inline(always)]
-    fn splat_f64s(self, value: f64) -> Self::f64s {
+    fn splat_f64(self, value: f64) -> Self::f64 {
         unsafe { _mm512_set1_pd(value) }
     }
 
     #[inline(always)]
-    fn load_f32s(self, src: &[f32]) -> Self::f32s {
-        assert!(src.len() >= Self::f32s_lanes);
+    fn load_f32(self, src: &[f32]) -> Self::f32 {
+        assert!(src.len() >= Self::f32_lanes);
         unsafe { _mm512_loadu_ps(src.as_ptr()) }
     }
 
     #[inline(always)]
-    fn load_f64s(self, src: &[f64]) -> Self::f64s {
-        assert!(src.len() >= Self::f64s_lanes);
+    fn load_f64(self, src: &[f64]) -> Self::f64 {
+        assert!(src.len() >= Self::f64_lanes);
         unsafe { _mm512_loadu_pd(src.as_ptr()) }
     }
 
     #[inline(always)]
-    fn store_f32s(self, dst: &mut [f32], value: Self::f32s) {
-        assert!(dst.len() >= Self::f32s_lanes);
+    fn store_f32(self, dst: &mut [f32], value: Self::f32) {
+        assert!(dst.len() >= Self::f32_lanes);
         unsafe { _mm512_storeu_ps(dst.as_mut_ptr(), value) };
     }
 
     #[inline(always)]
-    fn store_f64s(self, dst: &mut [f64], value: Self::f64s) {
-        assert!(dst.len() >= Self::f64s_lanes);
+    fn store_f64(self, dst: &mut [f64], value: Self::f64) {
+        assert!(dst.len() >= Self::f64_lanes);
         unsafe { _mm512_storeu_pd(dst.as_mut_ptr(), value) };
     }
 
     #[inline(always)]
-    unsafe fn load_unchecked_f32s(self, src: &[f32]) -> Self::f32s {
+    unsafe fn load_unchecked_f32(self, src: &[f32]) -> Self::f32 {
         unsafe { _mm512_loadu_ps(src.as_ptr()) }
     }
 
     #[inline(always)]
-    unsafe fn load_unchecked_f64s(self, src: &[f64]) -> Self::f64s {
+    unsafe fn load_unchecked_f64(self, src: &[f64]) -> Self::f64 {
         unsafe { _mm512_loadu_pd(src.as_ptr()) }
     }
 
     #[inline(always)]
-    unsafe fn store_unchecked_f32s(self, dst: &mut [f32], value: Self::f32s) {
+    unsafe fn store_unchecked_f32(self, dst: &mut [f32], value: Self::f32) {
         unsafe { _mm512_storeu_ps(dst.as_mut_ptr(), value) }
     }
 
     #[inline(always)]
-    unsafe fn store_unchecked_f64s(self, dst: &mut [f64], value: Self::f64s) {
+    unsafe fn store_unchecked_f64(self, dst: &mut [f64], value: Self::f64) {
         unsafe { _mm512_storeu_pd(dst.as_mut_ptr(), value) }
     }
-}
 
-impl SimdFloatOps for Avx512 {
     #[inline(always)]
-    fn abs_f32s(self, a: Self::f32s) -> Self::f32s {
+    fn abs_f32(self, a: Self::f32) -> Self::f32 {
         unsafe { _mm512_abs_ps(a) }
     }
 
     #[inline(always)]
-    fn abs_f64s(self, a: Self::f64s) -> Self::f64s {
+    fn abs_f64(self, a: Self::f64) -> Self::f64 {
         unsafe { _mm512_abs_pd(a) }
     }
 
     #[inline(always)]
-    fn add_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn add_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm512_add_ps(a, b) }
     }
 
     #[inline(always)]
-    fn add_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn add_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm512_add_pd(a, b) }
     }
 
     #[inline(always)]
-    fn sub_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn sub_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm512_sub_ps(a, b) }
     }
 
     #[inline(always)]
-    fn sub_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn sub_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm512_sub_pd(a, b) }
     }
 
     #[inline(always)]
-    fn mul_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn mul_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm512_mul_ps(a, b) }
     }
 
     #[inline(always)]
-    fn mul_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn mul_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm512_mul_pd(a, b) }
     }
 
     #[inline(always)]
-    fn div_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn div_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm512_div_ps(a, b) }
     }
 
     #[inline(always)]
-    fn div_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn div_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm512_div_pd(a, b) }
     }
 
     #[inline(always)]
-    fn max_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn max_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm512_max_ps(a, b) }
     }
 
     #[inline(always)]
-    fn max_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn max_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm512_max_pd(a, b) }
     }
 
     #[inline(always)]
-    fn min_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn min_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm512_min_ps(a, b) }
     }
 
     #[inline(always)]
-    fn min_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn min_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm512_min_pd(a, b) }
     }
 
     #[inline(always)]
-    fn neg_f32s(self, a: Self::f32s) -> Self::f32s {
+    fn neg_f32(self, a: Self::f32) -> Self::f32 {
         unsafe { xor_ps(a, _mm512_set1_ps(-0.0)) }
     }
 
     #[inline(always)]
-    fn neg_f64s(self, a: Self::f64s) -> Self::f64s {
+    fn neg_f64(self, a: Self::f64) -> Self::f64 {
         unsafe { xor_pd(a, _mm512_set1_pd(-0.0)) }
     }
 
     #[inline(always)]
-    fn sqrt_f32s(self, a: Self::f32s) -> Self::f32s {
+    fn sqrt_f32(self, a: Self::f32) -> Self::f32 {
         unsafe { _mm512_sqrt_ps(a) }
     }
 
     #[inline(always)]
-    fn sqrt_f64s(self, a: Self::f64s) -> Self::f64s {
+    fn sqrt_f64(self, a: Self::f64) -> Self::f64 {
         unsafe { _mm512_sqrt_pd(a) }
     }
 
     #[inline(always)]
-    fn mul_add_f32s(self, a: Self::f32s, b: Self::f32s, c: Self::f32s) -> Self::f32s {
+    fn mul_add_f32(self, a: Self::f32, b: Self::f32, c: Self::f32) -> Self::f32 {
         unsafe { _mm512_fmadd_ps(a, b, c) }
     }
 
     #[inline(always)]
-    fn mul_add_f64s(self, a: Self::f64s, b: Self::f64s, c: Self::f64s) -> Self::f64s {
+    fn mul_add_f64(self, a: Self::f64, b: Self::f64, c: Self::f64) -> Self::f64 {
         unsafe { _mm512_fmadd_pd(a, b, c) }
     }
 
     #[inline(always)]
-    fn mul_sub_f32s(self, a: Self::f32s, b: Self::f32s, c: Self::f32s) -> Self::f32s {
+    fn mul_sub_f32(self, a: Self::f32, b: Self::f32, c: Self::f32) -> Self::f32 {
         unsafe { _mm512_fmsub_ps(a, b, c) }
     }
 
     #[inline(always)]
-    fn mul_sub_f64s(self, a: Self::f64s, b: Self::f64s, c: Self::f64s) -> Self::f64s {
+    fn mul_sub_f64(self, a: Self::f64, b: Self::f64, c: Self::f64) -> Self::f64 {
         unsafe { _mm512_fmsub_pd(a, b, c) }
     }
 
     #[inline(always)]
-    fn nmul_add_f32s(self, a: Self::f32s, b: Self::f32s, c: Self::f32s) -> Self::f32s {
+    fn nmul_add_f32(self, a: Self::f32, b: Self::f32, c: Self::f32) -> Self::f32 {
         unsafe { _mm512_fnmadd_ps(a, b, c) }
     }
 
     #[inline(always)]
-    fn nmul_add_f64s(self, a: Self::f64s, b: Self::f64s, c: Self::f64s) -> Self::f64s {
+    fn nmul_add_f64(self, a: Self::f64, b: Self::f64, c: Self::f64) -> Self::f64 {
         unsafe { _mm512_fnmadd_pd(a, b, c) }
     }
 
     #[inline(always)]
-    fn nmul_sub_f32s(self, a: Self::f32s, b: Self::f32s, c: Self::f32s) -> Self::f32s {
+    fn nmul_sub_f32(self, a: Self::f32, b: Self::f32, c: Self::f32) -> Self::f32 {
         unsafe { _mm512_fnmsub_ps(a, b, c) }
     }
 
     #[inline(always)]
-    fn nmul_sub_f64s(self, a: Self::f64s, b: Self::f64s, c: Self::f64s) -> Self::f64s {
+    fn nmul_sub_f64(self, a: Self::f64, b: Self::f64, c: Self::f64) -> Self::f64 {
         unsafe { _mm512_fnmsub_pd(a, b, c) }
     }
-}
 
-impl SimdMaskOps for Avx512 {
     #[inline(always)]
-    fn eq_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::m32s {
+    fn eq_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
         unsafe { Avx512MaskF32(_mm512_cmp_ps_mask::<_CMP_EQ_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn eq_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::m64s {
+    fn eq_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
         unsafe { Avx512MaskF64(_mm512_cmp_pd_mask::<_CMP_EQ_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn ge_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::m32s {
+    fn ge_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
         unsafe { Avx512MaskF32(_mm512_cmp_ps_mask::<_CMP_GE_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn ge_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::m64s {
+    fn ge_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
         unsafe { Avx512MaskF64(_mm512_cmp_pd_mask::<_CMP_GE_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn gt_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::m32s {
+    fn gt_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
         unsafe { Avx512MaskF32(_mm512_cmp_ps_mask::<_CMP_GT_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn gt_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::m64s {
+    fn gt_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
         unsafe { Avx512MaskF64(_mm512_cmp_pd_mask::<_CMP_GT_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn le_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::m32s {
+    fn le_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
         unsafe { Avx512MaskF32(_mm512_cmp_ps_mask::<_CMP_LE_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn le_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::m64s {
+    fn le_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
         unsafe { Avx512MaskF64(_mm512_cmp_pd_mask::<_CMP_LE_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn lt_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::m32s {
+    fn lt_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
         unsafe { Avx512MaskF32(_mm512_cmp_ps_mask::<_CMP_LT_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn lt_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::m64s {
+    fn lt_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
         unsafe { Avx512MaskF64(_mm512_cmp_pd_mask::<_CMP_LT_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn ne_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::m32s {
+    fn ne_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
         unsafe { Avx512MaskF32(_mm512_cmp_ps_mask::<_CMP_NEQ_UQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn ne_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::m64s {
+    fn ne_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
         unsafe { Avx512MaskF64(_mm512_cmp_pd_mask::<_CMP_NEQ_UQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn select_f32s(self, mask: Self::m32s, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn select_f32(self, mask: Self::m32s, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm512_mask_blend_ps(mask.0, b, a) }
     }
 
     #[inline(always)]
-    fn select_f64s(self, mask: Self::m64s, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn select_f64(self, mask: Self::m64s, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm512_mask_blend_pd(mask.0, b, a) }
     }
-}
 
-impl SimdBitOps for Avx512 {
     #[inline(always)]
-    fn bitand_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn bitand_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { and_ps(a, b) }
     }
 
     #[inline(always)]
-    fn bitor_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn bitor_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { or_ps(a, b) }
     }
 
     #[inline(always)]
-    fn bitxor_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn bitxor_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { xor_ps(a, b) }
     }
 
     #[inline(always)]
-    fn bitand_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn bitand_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { and_pd(a, b) }
     }
 
     #[inline(always)]
-    fn bitor_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn bitor_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { or_pd(a, b) }
     }
 
     #[inline(always)]
-    fn bitxor_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn bitxor_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { xor_pd(a, b) }
     }
 
     #[inline(always)]
-    fn bitnot_f32s(self, a: Self::f32s) -> Self::f32s {
+    fn bitnot_f32(self, a: Self::f32) -> Self::f32 {
         unsafe {
             let x = _mm512_castps_si512(a);
             _mm512_castsi512_ps(_mm512_ternarylogic_epi32::<0x55>(x, x, x))
@@ -426,7 +449,7 @@ impl SimdBitOps for Avx512 {
     }
 
     #[inline(always)]
-    fn bitnot_f64s(self, a: Self::f64s) -> Self::f64s {
+    fn bitnot_f64(self, a: Self::f64) -> Self::f64 {
         unsafe {
             let x = _mm512_castpd_si512(a);
             _mm512_castsi512_pd(_mm512_ternarylogic_epi64::<0x55>(x, x, x))
@@ -434,19 +457,17 @@ impl SimdBitOps for Avx512 {
     }
 
     #[inline(always)]
-    fn bitandnot_f32s(self, a: Self::f32s, b: Self::f32s) -> Self::f32s {
+    fn bitandnot_f32(self, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { andnot_ps(a, b) }
     }
 
     #[inline(always)]
-    fn bitandnot_f64s(self, a: Self::f64s, b: Self::f64s) -> Self::f64s {
+    fn bitandnot_f64(self, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { andnot_pd(a, b) }
     }
-}
 
-impl SimdReduceOps for Avx512 {
     #[inline(always)]
-    fn reduce_max_f32s(self, a: Self::f32s) -> f32 {
+    fn reduce_max_f32(self, a: Self::f32) -> f32 {
         unsafe {
             let (lo, hi) = split_f32s(a);
             let s = _mm256_max_ps(lo, hi);
@@ -458,7 +479,7 @@ impl SimdReduceOps for Avx512 {
     }
 
     #[inline(always)]
-    fn reduce_max_f64s(self, a: Self::f64s) -> f64 {
+    fn reduce_max_f64(self, a: Self::f64) -> f64 {
         unsafe {
             let (lo, hi) = split_f64s(a);
             let s = _mm256_max_pd(lo, hi);
@@ -469,7 +490,7 @@ impl SimdReduceOps for Avx512 {
     }
 
     #[inline(always)]
-    fn reduce_min_f32s(self, a: Self::f32s) -> f32 {
+    fn reduce_min_f32(self, a: Self::f32) -> f32 {
         unsafe {
             let (lo, hi) = split_f32s(a);
             let s = _mm256_min_ps(lo, hi);
@@ -481,7 +502,7 @@ impl SimdReduceOps for Avx512 {
     }
 
     #[inline(always)]
-    fn reduce_min_f64s(self, a: Self::f64s) -> f64 {
+    fn reduce_min_f64(self, a: Self::f64) -> f64 {
         unsafe {
             let (lo, hi) = split_f64s(a);
             let s = _mm256_min_pd(lo, hi);
@@ -492,7 +513,7 @@ impl SimdReduceOps for Avx512 {
     }
 
     #[inline(always)]
-    fn reduce_sum_f32s(self, a: Self::f32s) -> f32 {
+    fn reduce_sum_f32(self, a: Self::f32) -> f32 {
         unsafe {
             let (lo, hi) = split_f32s(a);
             let s = _mm256_add_ps(lo, hi);
@@ -504,7 +525,7 @@ impl SimdReduceOps for Avx512 {
     }
 
     #[inline(always)]
-    fn reduce_sum_f64s(self, a: Self::f64s) -> f64 {
+    fn reduce_sum_f64(self, a: Self::f64) -> f64 {
         unsafe {
             let (lo, hi) = split_f64s(a);
             let s = _mm256_add_pd(lo, hi);
@@ -514,6 +535,8 @@ impl SimdReduceOps for Avx512 {
         }
     }
 }
+
+impl Simd for Avx512 {}
 
 #[cfg(test)]
 fn run(check: crate::backend::test_utils::Check) {
