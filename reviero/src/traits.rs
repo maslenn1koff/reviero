@@ -119,7 +119,7 @@ pub trait Float: Copy + Send + Sync + 'static {
     const f32_lanes: usize;
     const f64_lanes: usize;
     const m32_lanes: usize = Self::f32_lanes;
-    const m64_lanes: usize = Self::f32_lanes;
+    const m64_lanes: usize = Self::f64_lanes;
 
     define_simd_io_ops!(f32);
     define_simd_io_ops!(f64);
