@@ -34,13 +34,13 @@ impl<'a> reviero::SimdFn for Sum<'a> {
     fn call<S: reviero::traits::Simd>(self, simd: S) -> Self::Result {
         let (head, tail) = reviero::utils::as_simd_f32s(&simd, self.0);
 
-        let mut sum = simd.splat_f32s(0.0);
+        let mut sum = simd.splat_f32(0.0);
 
         for vector in head {
-            sum = simd.add_f32s(sum, vector);
+            sum = simd.add_f32(sum, vector);
         }
 
-        let mut sum = simd.reduce_sum_f32s(sum);
+        let mut sum = simd.reduce_sum_f32(sum);
 
         for &x in tail {
             sum += x;

@@ -31,13 +31,13 @@
 //!     #[inline(always)]
 //!     fn call<S: reviero::traits::Simd>(self, simd: S) -> Self::Result {
 //!         let (vectors, tail) = reviero::utils::as_simd_f32s(&simd, self.0);
-//!         let mut sum = simd.splat_f32s(0.0);
+//!         let mut sum = simd.splat_f32(0.0);
 //!
 //!         for vector in vectors {
-//!             sum = simd.add_f32s(sum, vector);
+//!             sum = simd.add_f32(sum, vector);
 //!         }
 //!
-//!         let mut result = simd.reduce_sum_f32s(sum);
+//!         let mut result = simd.reduce_sum_f32(sum);
 //!         for &value in tail {
 //!             result += value;
 //!         }
