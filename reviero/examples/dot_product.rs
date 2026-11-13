@@ -12,10 +12,10 @@ macro_rules! define_dot {
                 fn call<S: reviero::traits::Simd>(self, simd: S) -> Self::Result {
                     assert_eq!(self.0.len(), self.1.len());
 
-                    let (x_head, x_tail) = reviero::utils::[<as_simd_ $ty s>](&simd, self.0);
-                    let (y_head, y_tail) = reviero::utils::[<as_simd_ $ty s>](&simd, self.1);
+                    let (x_head, x_tail) = reviero::utils::[<as_simd_ $ty>](&simd, self.0);
+                    let (y_head, y_tail) = reviero::utils::[<as_simd_ $ty>](&simd, self.1);
 
-                    let mut acc = [simd.[<splat_ $ty s>](0.0); 4];
+                    let mut acc = [simd.[<splat_ $ty>](0.0); 4];
 
                     let mut vectors = x_head.zip(y_head);
                     while vectors.len() >= 4 {
@@ -24,20 +24,20 @@ macro_rules! define_dot {
                         let (x2, y2) = vectors.next().unwrap();
                         let (x3, y3) = vectors.next().unwrap();
 
-                        acc[0] = simd.[<mul_add_ $ty s>](x0, y0, acc[0]);
-                        acc[1] = simd.[<mul_add_ $ty s>](x1, y1, acc[1]);
-                        acc[2] = simd.[<mul_add_ $ty s>](x2, y2, acc[2]);
-                        acc[3] = simd.[<mul_add_ $ty s>](x3, y3, acc[3]);
+                        acc[0] = simd.[<mul_add_ $ty>](x0, y0, acc[0]);
+                        acc[1] = simd.[<mul_add_ $ty>](x1, y1, acc[1]);
+                        acc[2] = simd.[<mul_add_ $ty>](x2, y2, acc[2]);
+                        acc[3] = simd.[<mul_add_ $ty>](x3, y3, acc[3]);
                     }
 
                     for (x, y) in vectors {
-                        acc[0] = simd.[<mul_add_ $ty s>](x, y, acc[0]);
+                        acc[0] = simd.[<mul_add_ $ty>](x, y, acc[0]);
                     }
 
-                    acc[0] = simd.[<add_ $ty s>](acc[0], acc[1]);
-                    acc[1] = simd.[<add_ $ty s>](acc[2], acc[3]);
-                    acc[0] = simd.[<add_ $ty s>](acc[0], acc[1]);
-                    let mut product = simd.[<reduce_sum_ $ty s>](acc[0]);
+                    acc[0] = simd.[<add_ $ty>](acc[0], acc[1]);
+                    acc[1] = simd.[<add_ $ty>](acc[2], acc[3]);
+                    acc[0] = simd.[<add_ $ty>](acc[0], acc[1]);
+                    let mut product = simd.[<reduce_sum_ $ty>](acc[0]);
 
                     for (x, y) in x_tail.iter().zip(y_tail.iter()) {
                         product += x * y;
