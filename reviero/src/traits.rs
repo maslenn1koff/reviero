@@ -96,7 +96,7 @@ macro_rules! define_simd_compare_ops {
     };
 }
 
-pub trait Simd: Float {}
+pub trait Simd: FloatSimd {}
 
 pub trait SimdMask: Copy + Debug + Send + Sync + 'static {
     fn splat(v: bool) -> Self;
@@ -110,7 +110,7 @@ pub trait SimdMask: Copy + Debug + Send + Sync + 'static {
     fn all(self) -> bool;
 }
 
-pub trait Float: Copy + Send + Sync + 'static {
+pub trait FloatSimd: Copy + Send + Sync + 'static {
     type f32: Copy + Send + Sync + 'static;
     type f64: Copy + Send + Sync + 'static;
     type m32s: SimdMask + Copy + Send + Sync + 'static;

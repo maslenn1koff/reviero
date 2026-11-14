@@ -5,7 +5,7 @@ use std::arch::x86_64::*;
 
 use crate::{
     SimdFn,
-    traits::{Float, Simd, SimdMask},
+    traits::{FloatSimd, Simd, SimdMask},
 };
 
 #[derive(Copy, Clone, Debug)]
@@ -145,7 +145,7 @@ pub unsafe fn vectorize<Op: SimdFn>(op: Op) -> Op::Result {
     op.call(Avx512)
 }
 
-impl Float for Avx512 {
+impl FloatSimd for Avx512 {
     type f32 = __m512;
     type f64 = __m512d;
 

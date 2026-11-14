@@ -5,7 +5,7 @@
 //! `vectorize` wrapper, so the target features are enabled for the whole call.
 
 use crate::SimdFn;
-use crate::traits::{Simd, SimdMask};
+use crate::traits::{FloatSimd, Simd, SimdMask};
 
 /// Generates the standard per-backend test module.
 ///
@@ -21,10 +21,8 @@ macro_rules! backend_tests {
 
             #[test]
             fn lanes() {
-                assert_eq!(<$backend as $crate::traits::Float>::f32_lanes, $f32_lanes);
-                assert_eq!(<$backend as $crate::traits::Float>::f64_lanes, $f64_lanes);
-                assert_eq!(<$backend as $crate::traits::Float>::m32_lanes, $f32_lanes);
-                assert_eq!(<$backend as $crate::traits::Float>::m64_lanes, $f64_lanes);
+                assert_eq!(<$backend as $crate::traits::FloatSimd>::f32_lanes, $f32_lanes);
+                assert_eq!(<$backend as $crate::traits::FloatSimd>::f64_lanes, $f64_lanes);
             }
 
             #[test]
@@ -270,7 +268,7 @@ fn check_float_f64<S: Simd>(simd: S) {
 }
 
 #[inline(always)]
-fn check_mask_f32<S: Simd>(simd: S) {
+fn check_mask_f32<S: FloatSimd>(simd: S) {
     let lanes = S::f32_lanes;
     let a: Vec<f32> = (0..lanes).map(|lane| lane as f32).collect();
     let b: Vec<f32> = (0..lanes).map(|lane| (lanes - 1 - lane) as f32).collect();
@@ -302,6 +300,8 @@ fn check_mask_f32<S: Simd>(simd: S) {
     let none = simd.lt_f32(av, av);
     assert!(all.all(), "f32 mask all");
     assert!(all.any(), "f32 mask any");
+    assert!(all.any(), "f32 mask any");
+    assert!(!none.any(), "f32 empty mask any");
     assert!(!none.any(), "f32 empty mask any");
     assert!(!none.all(), "f32 empty mask all");
     assert!(all.and(all).all(), "f32 mask and");
@@ -326,6 +326,7 @@ fn check_mask_f32<S: Simd>(simd: S) {
 
         assert!(mixed.any(), "f32 mixed mask any");
         assert!(!mixed.all(), "f32 mixed mask all");
+        assert!(mixed.any(), "f32 mixed mask any");
 
         simd.store_f32(&mut out, simd.select_f32(mixed, one, zero));
         for (lane, &value) in out.iter().enumerate() {
@@ -342,7 +343,7 @@ fn check_mask_f32<S: Simd>(simd: S) {
 }
 
 #[inline(always)]
-fn check_mask_f64<S: Simd>(simd: S) {
+fn check_mask_f64<S: FloatSimd>(simd: S) {
     let lanes = S::f64_lanes;
     let a: Vec<f64> = (0..lanes).map(|lane| lane as f64).collect();
     let b: Vec<f64> = (0..lanes).map(|lane| (lanes - 1 - lane) as f64).collect();
@@ -374,6 +375,8 @@ fn check_mask_f64<S: Simd>(simd: S) {
     let none = simd.lt_f64(av, av);
     assert!(all.all(), "f64 mask all");
     assert!(all.any(), "f64 mask any");
+    assert!(all.any(), "f64 mask any");
+    assert!(!none.any(), "f64 empty mask any");
     assert!(!none.any(), "f64 empty mask any");
     assert!(!none.all(), "f64 empty mask all");
     assert!(all.and(all).all(), "f64 mask and");
@@ -398,6 +401,7 @@ fn check_mask_f64<S: Simd>(simd: S) {
 
         assert!(mixed.any(), "f64 mixed mask any");
         assert!(!mixed.all(), "f64 mixed mask all");
+        assert!(mixed.any(), "f64 mixed mask any");
 
         simd.store_f64(&mut out, simd.select_f64(mixed, one, zero));
         for (lane, &value) in out.iter().enumerate() {

@@ -5,7 +5,7 @@ use std::arch::x86_64::*;
 
 use crate::{
     SimdFn,
-    traits::{Float, Simd, SimdMask},
+    traits::{FloatSimd, Simd, SimdMask},
 };
 
 /// AVX2 comparison mask for eight `f32` lanes.
@@ -132,7 +132,7 @@ pub unsafe fn vectorize<Op: SimdFn>(op: Op) -> Op::Result {
     op.call(Avx2Fma)
 }
 
-impl Float for Avx2Fma {
+impl FloatSimd for Avx2Fma {
     type f32 = __m256;
     type f64 = __m256d;
 

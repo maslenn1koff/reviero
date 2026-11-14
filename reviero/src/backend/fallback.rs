@@ -1,4 +1,4 @@
-use crate::traits::{Float, Simd, SimdMask};
+use crate::traits::{FloatSimd, Simd, SimdMask};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 macro_rules! define_io_ops {
@@ -195,7 +195,7 @@ impl SimdMask for FallbackMask {
     }
 }
 
-impl Float for Fallback {
+impl FloatSimd for Fallback {
     type f32 = f32;
     type f64 = f64;
 
