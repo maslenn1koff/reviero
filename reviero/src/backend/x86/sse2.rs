@@ -123,8 +123,8 @@ impl FloatSimd for Sse2 {
     type f32 = __m128;
     type f64 = __m128d;
 
-    type m32s = Sse2MaskF32;
-    type m64s = Sse2MaskF64;
+    type m32 = Sse2MaskF32;
+    type m64 = Sse2MaskF64;
 
     const f32_lanes: usize = 4;
     const f64_lanes: usize = 2;
@@ -315,72 +315,72 @@ impl FloatSimd for Sse2 {
     }
 
     #[inline(always)]
-    fn eq_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
+    fn eq_f32(self, a: Self::f32, b: Self::f32) -> Self::m32 {
         unsafe { Sse2MaskF32(_mm_cmpeq_ps(a, b)) }
     }
 
     #[inline(always)]
-    fn eq_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
+    fn eq_f64(self, a: Self::f64, b: Self::f64) -> Self::m64 {
         unsafe { Sse2MaskF64(_mm_cmpeq_pd(a, b)) }
     }
 
     #[inline(always)]
-    fn ge_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
+    fn ge_f32(self, a: Self::f32, b: Self::f32) -> Self::m32 {
         unsafe { Sse2MaskF32(_mm_cmpge_ps(a, b)) }
     }
 
     #[inline(always)]
-    fn ge_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
+    fn ge_f64(self, a: Self::f64, b: Self::f64) -> Self::m64 {
         unsafe { Sse2MaskF64(_mm_cmpge_pd(a, b)) }
     }
 
     #[inline(always)]
-    fn gt_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
+    fn gt_f32(self, a: Self::f32, b: Self::f32) -> Self::m32 {
         unsafe { Sse2MaskF32(_mm_cmpgt_ps(a, b)) }
     }
 
     #[inline(always)]
-    fn gt_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
+    fn gt_f64(self, a: Self::f64, b: Self::f64) -> Self::m64 {
         unsafe { Sse2MaskF64(_mm_cmpgt_pd(a, b)) }
     }
 
     #[inline(always)]
-    fn le_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
+    fn le_f32(self, a: Self::f32, b: Self::f32) -> Self::m32 {
         unsafe { Sse2MaskF32(_mm_cmple_ps(a, b)) }
     }
 
     #[inline(always)]
-    fn le_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
+    fn le_f64(self, a: Self::f64, b: Self::f64) -> Self::m64 {
         unsafe { Sse2MaskF64(_mm_cmple_pd(a, b)) }
     }
 
     #[inline(always)]
-    fn lt_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
+    fn lt_f32(self, a: Self::f32, b: Self::f32) -> Self::m32 {
         unsafe { Sse2MaskF32(_mm_cmplt_ps(a, b)) }
     }
 
     #[inline(always)]
-    fn lt_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
+    fn lt_f64(self, a: Self::f64, b: Self::f64) -> Self::m64 {
         unsafe { Sse2MaskF64(_mm_cmplt_pd(a, b)) }
     }
 
     #[inline(always)]
-    fn ne_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
+    fn ne_f32(self, a: Self::f32, b: Self::f32) -> Self::m32 {
         unsafe { Sse2MaskF32(_mm_cmpneq_ps(a, b)) }
     }
 
     #[inline(always)]
-    fn ne_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
+    fn ne_f64(self, a: Self::f64, b: Self::f64) -> Self::m64 {
         unsafe { Sse2MaskF64(_mm_cmpneq_pd(a, b)) }
     }
 
     #[inline(always)]
-    fn select_f32(self, mask: Self::m32s, a: Self::f32, b: Self::f32) -> Self::f32 {
+    fn select_f32(self, mask: Self::m32, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm_or_ps(_mm_and_ps(mask.0, a), _mm_andnot_ps(mask.0, b)) }
     }
 
     #[inline(always)]
-    fn select_f64(self, mask: Self::m64s, a: Self::f64, b: Self::f64) -> Self::f64 {
+    fn select_f64(self, mask: Self::m64, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm_or_pd(_mm_and_pd(mask.0, a), _mm_andnot_pd(mask.0, b)) }
     }
 

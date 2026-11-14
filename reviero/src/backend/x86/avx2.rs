@@ -136,8 +136,8 @@ impl FloatSimd for Avx2Fma {
     type f32 = __m256;
     type f64 = __m256d;
 
-    type m32s = AvxMaskF32;
-    type m64s = AvxMaskF64;
+    type m32 = AvxMaskF32;
+    type m64 = AvxMaskF64;
 
     const f32_lanes: usize = 8;
     const f64_lanes: usize = 4;
@@ -328,72 +328,72 @@ impl FloatSimd for Avx2Fma {
     }
 
     #[inline(always)]
-    fn eq_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
+    fn eq_f32(self, a: Self::f32, b: Self::f32) -> Self::m32 {
         unsafe { AvxMaskF32(_mm256_cmp_ps::<_CMP_EQ_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn eq_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
+    fn eq_f64(self, a: Self::f64, b: Self::f64) -> Self::m64 {
         unsafe { AvxMaskF64(_mm256_cmp_pd::<_CMP_EQ_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn ge_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
+    fn ge_f32(self, a: Self::f32, b: Self::f32) -> Self::m32 {
         unsafe { AvxMaskF32(_mm256_cmp_ps::<_CMP_GE_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn ge_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
+    fn ge_f64(self, a: Self::f64, b: Self::f64) -> Self::m64 {
         unsafe { AvxMaskF64(_mm256_cmp_pd::<_CMP_GE_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn gt_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
+    fn gt_f32(self, a: Self::f32, b: Self::f32) -> Self::m32 {
         unsafe { AvxMaskF32(_mm256_cmp_ps::<_CMP_GT_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn gt_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
+    fn gt_f64(self, a: Self::f64, b: Self::f64) -> Self::m64 {
         unsafe { AvxMaskF64(_mm256_cmp_pd::<_CMP_GT_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn le_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
+    fn le_f32(self, a: Self::f32, b: Self::f32) -> Self::m32 {
         unsafe { AvxMaskF32(_mm256_cmp_ps::<_CMP_LE_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn le_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
+    fn le_f64(self, a: Self::f64, b: Self::f64) -> Self::m64 {
         unsafe { AvxMaskF64(_mm256_cmp_pd::<_CMP_LE_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn lt_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
+    fn lt_f32(self, a: Self::f32, b: Self::f32) -> Self::m32 {
         unsafe { AvxMaskF32(_mm256_cmp_ps::<_CMP_LT_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn lt_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
+    fn lt_f64(self, a: Self::f64, b: Self::f64) -> Self::m64 {
         unsafe { AvxMaskF64(_mm256_cmp_pd::<_CMP_LT_OQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn ne_f32(self, a: Self::f32, b: Self::f32) -> Self::m32s {
+    fn ne_f32(self, a: Self::f32, b: Self::f32) -> Self::m32 {
         unsafe { AvxMaskF32(_mm256_cmp_ps::<_CMP_NEQ_UQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn ne_f64(self, a: Self::f64, b: Self::f64) -> Self::m64s {
+    fn ne_f64(self, a: Self::f64, b: Self::f64) -> Self::m64 {
         unsafe { AvxMaskF64(_mm256_cmp_pd::<_CMP_NEQ_UQ>(a, b)) }
     }
 
     #[inline(always)]
-    fn select_f32(self, mask: Self::m32s, a: Self::f32, b: Self::f32) -> Self::f32 {
+    fn select_f32(self, mask: Self::m32, a: Self::f32, b: Self::f32) -> Self::f32 {
         unsafe { _mm256_blendv_ps(b, a, mask.0) }
     }
 
     #[inline(always)]
-    fn select_f64(self, mask: Self::m64s, a: Self::f64, b: Self::f64) -> Self::f64 {
+    fn select_f64(self, mask: Self::m64, a: Self::f64, b: Self::f64) -> Self::f64 {
         unsafe { _mm256_blendv_pd(b, a, mask.0) }
     }
 

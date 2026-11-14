@@ -311,10 +311,10 @@ fn check_mask_f32<S: FloatSimd>(simd: S) {
     assert!(!all.not().any(), "f32 mask not all");
 
     let mask_bits = (1u32 << lanes) - 1;
-    assert_eq!(S::m32s::splat(true).to_bits(), mask_bits, "f32 splat mask bits");
-    assert_eq!(S::m32s::splat(false).to_bits(), 0, "f32 empty splat mask bits");
+    assert_eq!(S::m32::splat(true).to_bits(), mask_bits, "f32 splat mask bits");
+    assert_eq!(S::m32::splat(false).to_bits(), 0, "f32 empty splat mask bits");
     let bits = 0b1010_0101 & mask_bits;
-    assert_eq!(S::m32s::from_bits(bits).to_bits(), bits, "f32 mask bit roundtrip");
+    assert_eq!(S::m32::from_bits(bits).to_bits(), bits, "f32 mask bit roundtrip");
 
     // Mixed (partially set) masks must survive and/or/not/select correctly.
     if lanes >= 2 {
@@ -386,10 +386,10 @@ fn check_mask_f64<S: FloatSimd>(simd: S) {
     assert!(!all.not().any(), "f64 mask not all");
 
     let mask_bits = (1u32 << lanes) - 1;
-    assert_eq!(S::m64s::splat(true).to_bits(), mask_bits, "f64 splat mask bits");
-    assert_eq!(S::m64s::splat(false).to_bits(), 0, "f64 empty splat mask bits");
+    assert_eq!(S::m64::splat(true).to_bits(), mask_bits, "f64 splat mask bits");
+    assert_eq!(S::m64::splat(false).to_bits(), 0, "f64 empty splat mask bits");
     let bits = 0b1010_0101 & mask_bits;
-    assert_eq!(S::m64s::from_bits(bits).to_bits(), bits, "f64 mask bit roundtrip");
+    assert_eq!(S::m64::from_bits(bits).to_bits(), bits, "f64 mask bit roundtrip");
 
     // Mixed (partially set) masks must survive and/or/not/select correctly.
     if lanes >= 2 {

@@ -113,8 +113,8 @@ pub trait SimdMask: Copy + Debug + Send + Sync + 'static {
 pub trait FloatSimd: Copy + Send + Sync + 'static {
     type f32: Copy + Send + Sync + 'static;
     type f64: Copy + Send + Sync + 'static;
-    type m32s: SimdMask + Copy + Send + Sync + 'static;
-    type m64s: SimdMask + Copy + Send + Sync + 'static;
+    type m32: SimdMask + Copy + Send + Sync + 'static;
+    type m64: SimdMask + Copy + Send + Sync + 'static;
 
     const f32_lanes: usize;
     const f64_lanes: usize;
@@ -144,13 +144,13 @@ pub trait FloatSimd: Copy + Send + Sync + 'static {
     define_simd_reduce_ops!(f32, sum, max, min);
     define_simd_reduce_ops!(f64, sum, max, min);
 
-    define_simd_compare_ops!(f32, m32s, eq, ne, lt, le, gt, ge);
-    define_simd_compare_ops!(f64, m64s, eq, ne, lt, le, gt, ge);
+    define_simd_compare_ops!(f32, m32, eq, ne, lt, le, gt, ge);
+    define_simd_compare_ops!(f64, m64, eq, ne, lt, le, gt, ge);
 
     /// Per lane: `mask ? a : b`.
-    fn select_f32(self, mask: Self::m32s, a: Self::f32, b: Self::f32) -> Self::f32;
+    fn select_f32(self, mask: Self::m32, a: Self::f32, b: Self::f32) -> Self::f32;
     /// Per lane: `mask ? a : b`.
-    fn select_f64(self, mask: Self::m64s, a: Self::f64, b: Self::f64) -> Self::f64;
+    fn select_f64(self, mask: Self::m64, a: Self::f64, b: Self::f64) -> Self::f64;
 
     // Bitwise ops on the float bit patterns (and/or/xor are one instruction).
     // Enough for sign tricks: abs = and, neg = xor, copysign = and + or.
