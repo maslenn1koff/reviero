@@ -116,21 +116,21 @@ macro_rules! bit_helper {
     };
 }
 
-bit_helper!(and_ps, floatSimd32x4_t, vreinterpretq_u32_f32, vreinterpretq_f32_u32, vandq_u32);
-bit_helper!(or_ps, floatSimd32x4_t, vreinterpretq_u32_f32, vreinterpretq_f32_u32, vorrq_u32);
-bit_helper!(xor_ps, floatSimd32x4_t, vreinterpretq_u32_f32, vreinterpretq_f32_u32, veorq_u32);
+bit_helper!(and_ps, float32x4_t, vreinterpretq_u32_f32, vreinterpretq_f32_u32, vandq_u32);
+bit_helper!(or_ps, float32x4_t, vreinterpretq_u32_f32, vreinterpretq_f32_u32, vorrq_u32);
+bit_helper!(xor_ps, float32x4_t, vreinterpretq_u32_f32, vreinterpretq_f32_u32, veorq_u32);
 
-bit_helper!(and_pd, floatSimd64x2_t, vreinterpretq_u64_f64, vreinterpretq_f64_u64, vandq_u64);
-bit_helper!(or_pd, floatSimd64x2_t, vreinterpretq_u64_f64, vreinterpretq_f64_u64, vorrq_u64);
-bit_helper!(xor_pd, floatSimd64x2_t, vreinterpretq_u64_f64, vreinterpretq_f64_u64, veorq_u64);
+bit_helper!(and_pd, float64x2_t, vreinterpretq_u64_f64, vreinterpretq_f64_u64, vandq_u64);
+bit_helper!(or_pd, float64x2_t, vreinterpretq_u64_f64, vreinterpretq_f64_u64, vorrq_u64);
+bit_helper!(xor_pd, float64x2_t, vreinterpretq_u64_f64, vreinterpretq_f64_u64, veorq_u64);
 
 #[inline(always)]
-unsafe fn andnot_ps(a: floatSimd32x4_t, b: floatSimd32x4_t) -> floatSimd32x4_t {
+unsafe fn andnot_ps(a: float32x4_t, b: float32x4_t) -> float32x4_t {
     unsafe { vreinterpretq_f32_u32(vbicq_u32(vreinterpretq_u32_f32(b), vreinterpretq_u32_f32(a))) }
 }
 
 #[inline(always)]
-unsafe fn andnot_pd(a: floatSimd64x2_t, b: floatSimd64x2_t) -> floatSimd64x2_t {
+unsafe fn andnot_pd(a: float64x2_t, b: float64x2_t) -> float64x2_t {
     unsafe { vreinterpretq_f64_u64(vbicq_u64(vreinterpretq_u64_f64(b), vreinterpretq_u64_f64(a))) }
 }
 
@@ -149,8 +149,8 @@ pub unsafe fn vectorize<Op: SimdFn>(op: Op) -> Op::Result {
 }
 
 impl FloatSimd for Neon {
-    type f32 = floatSimd32x4_t;
-    type f64 = floatSimd64x2_t;
+    type f32 = float32x4_t;
+    type f64 = float64x2_t;
 
     type m32 = NeonMaskF32;
     type m64 = NeonMaskF64;
