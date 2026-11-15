@@ -274,7 +274,14 @@ pub trait HalfSimd: FloatSimd {
     define_halfsimd_compare_ops!(bf16, m16, eq, ne, lt, le, gt, ge);
 
     /// Per lane: `mask ? a : b`.
-    fn select_f16(self, mask: Self::m16, a: Self::f16, b: Self::f16) -> Self::f16;
+    #[inline(always)]
+    fn select_f16(self, mask: Self::m16, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.f32_to_f16(self.select_f32(self.m16_to_m32(mask), self.f16_to_f32(a), self.f16_to_f32(b)))
+    }
+
     /// Per lane: `mask ? a : b`.
-    fn select_bf16(self, mask: Self::m16, a: Self::bf16, b: Self::bf16) -> Self::bf16;
+    #[inline(always)]
+    fn select_bf16(self, mask: Self::m16, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.f32_to_bf16(self.select_f32(self.m16_to_m32(mask), self.bf16_to_f32(a), self.bf16_to_f32(b)))
+    }
 }
