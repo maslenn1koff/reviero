@@ -1,4 +1,5 @@
-use crate::traits::{FloatSimd, Simd, SimdMask};
+use crate::traits::{FloatSimd, HalfSimd, Simd, SimdMask};
+use half::{bf16, f16};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 macro_rules! define_io_ops {
@@ -101,28 +102,69 @@ macro_rules! define_bit_ops {
     ($ty:ident) => {
         paste::paste! {
             #[inline(always)]
-            fn [<bitand_ $ty>](self, a: $ty, b: $ty) -> $ty {
+            fn [<bitand_ $ty>](self, a: Self::$ty, b: Self::$ty) -> Self::$ty {
                 <$ty>::from_bits(a.to_bits() & b.to_bits())
             }
 
             #[inline(always)]
-            fn [<bitandnot_ $ty>](self, a: $ty, b: $ty) -> $ty {
+            fn [<bitandnot_ $ty>](self, a: Self::$ty, b: Self::$ty) -> Self::$ty {
                 <$ty>::from_bits(!a.to_bits() & b.to_bits())
             }
 
             #[inline(always)]
-            fn [<bitor_ $ty>](self, a: $ty, b: $ty) -> $ty {
+            fn [<bitor_ $ty>](self, a: Self::$ty, b: Self::$ty) -> Self::$ty {
                 <$ty>::from_bits(a.to_bits() | b.to_bits())
             }
 
             #[inline(always)]
-            fn [<bitxor_ $ty>](self, a: $ty, b: $ty) -> $ty {
+            fn [<bitxor_ $ty>](self, a: Self::$ty, b: Self::$ty) -> Self::$ty {
                 <$ty>::from_bits(a.to_bits() ^ b.to_bits())
             }
 
             #[inline(always)]
-            fn [<bitnot_ $ty>](self, a: $ty) -> $ty {
+            fn [<bitnot_ $ty>](self, a: Self::$ty) -> Self::$ty {
                 <$ty>::from_bits(!a.to_bits())
+            }
+        }
+    };
+}
+
+macro_rules! define_half_bit_ops {
+    ($ty:ident) => {
+        paste::paste! {
+            #[inline(always)]
+            fn [<bitand_ $ty>](self, a: Self::$ty, b: Self::$ty) -> Self::$ty {
+                <$ty>::from_bits(
+                    $ty::from_f32(a).to_bits() & $ty::from_f32(b).to_bits()
+                ).to_f32()
+            }
+
+            #[inline(always)]
+            fn [<bitandnot_ $ty>](self, a: Self::$ty, b: Self::$ty) -> Self::$ty {
+                <$ty>::from_bits(
+                    !$ty::from_f32(a).to_bits() & $ty::from_f32(b).to_bits()
+                ).to_f32()
+            }
+
+            #[inline(always)]
+            fn [<bitor_ $ty>](self, a: Self::$ty, b: Self::$ty) -> Self::$ty {
+                <$ty>::from_bits(
+                    $ty::from_f32(a).to_bits() | $ty::from_f32(b).to_bits()
+                ).to_f32()
+            }
+
+            #[inline(always)]
+            fn [<bitxor_ $ty>](self, a: Self::$ty, b: Self::$ty) -> Self::$ty {
+                <$ty>::from_bits(
+                    $ty::from_f32(a).to_bits() ^ $ty::from_f32(b).to_bits()
+                ).to_f32()
+            }
+
+            #[inline(always)]
+            fn [<bitnot_ $ty>](self, a: Self::$ty) -> Self::$ty {
+                <$ty>::from_bits(
+                    !$ty::from_f32(a).to_bits()
+                ).to_f32()
             }
         }
     };
@@ -236,6 +278,34 @@ impl FloatSimd for Fallback {
 
     define_reduce_ops!(f32, sum, max, min);
     define_reduce_ops!(f64, sum, max, min);
+}
+
+impl HalfSimd for Fallback {
+    type f16 = f32;
+    type bf16 = f32;
+    type m16 = FallbackMask;
+    const f16_lanes: usize = 1;
+
+    #[rustfmt::skip] #[inline(always)]    fn f16_to_f32(self, a: Self::f16) -> Self::f32 { a }
+    #[rustfmt::skip] #[inline(always)]    fn f32_to_f16(self, a: Self::f32) -> Self::f16 { a }
+    #[rustfmt::skip] #[inline(always)]    fn bf16_to_f32(self, a: Self::bf16) -> Self::f32 { a }
+    #[rustfmt::skip] #[inline(always)]    fn f32_to_bf16(self, a: Self::f32) -> Self::bf16 { a }
+    #[rustfmt::skip] #[inline(always)]    fn m16_to_m32(self, a: Self::m16) -> Self::m32 { a }
+    #[rustfmt::skip] #[inline(always)]    fn m32_to_m16(self, a: Self::m32) -> Self::m16 { a }
+
+    #[rustfmt::skip] #[inline(always)]    fn splat_f16(self, value: f16) -> Self::f16 { value.to_f32() }
+    #[rustfmt::skip] #[inline(always)]    fn splat_bf16(self, value: bf16) -> Self::bf16 { value.to_f32() }
+    #[rustfmt::skip] #[inline(always)]    fn load_f16(self, src: &[f16]) -> Self::f16 { src[0].to_f32() }
+    #[rustfmt::skip] #[inline(always)]    fn load_bf16(self, src: &[bf16]) -> Self::bf16 { src[0].to_f32() }
+    #[rustfmt::skip] #[inline(always)]    unsafe fn load_unchecked_f16(self, src: &[f16]) -> Self::f16 { src[0].to_f32() }
+    #[rustfmt::skip] #[inline(always)]    unsafe fn load_unchecked_bf16(self, src: &[bf16]) -> Self::bf16 { src[0].to_f32() }
+    #[rustfmt::skip] #[inline(always)]    fn store_f16(self, dst: &mut [f16], value: Self::f16) { dst[0] = f16::from_f32(value) }
+    #[rustfmt::skip] #[inline(always)]    fn store_bf16(self, dst: &mut [bf16], value: Self::bf16) { dst[0] = bf16::from_f32(value) }
+    #[rustfmt::skip] #[inline(always)]    unsafe fn store_unchecked_f16(self, dst: &mut [f16], value: Self::f16) { dst[0] = f16::from_f32(value) }
+    #[rustfmt::skip] #[inline(always)]    unsafe fn store_unchecked_bf16(self, dst: &mut [bf16], value: Self::bf16) { dst[0] = bf16::from_f32(value) }
+
+    define_half_bit_ops!(f16);
+    define_half_bit_ops!(bf16);
 }
 
 impl Simd for Fallback {}
