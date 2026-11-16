@@ -1,7 +1,8 @@
+use half::{bf16, f16};
 use reviero::{SimdFn, dispatch};
 
 macro_rules! define_dot {
-    ($ty:ty) => {
+    ($ty:ident) => {
         paste::paste! {
             struct [<Dot $ty>]<'a>(&'a [[<$ty>]], &'a [[<$ty>]]);
 
@@ -15,7 +16,7 @@ macro_rules! define_dot {
                     let (x_head, x_tail) = reviero::utils::[<as_simd_ $ty>](&simd, self.0);
                     let (y_head, y_tail) = reviero::utils::[<as_simd_ $ty>](&simd, self.1);
 
-                    let mut acc = [simd.[<splat_ $ty>](0.0); 4];
+                    let mut acc = [simd.[<splat_ $ty>]($ty::default()); 4];
 
                     let mut vectors = x_head.zip(y_head);
                     while vectors.len() >= 4 {
@@ -52,17 +53,31 @@ macro_rules! define_dot {
 
 define_dot!(f32);
 define_dot!(f64);
+define_dot!(f16);
+define_dot!(bf16);
 
 fn main() {
-    let x = vec![1.0; 4096 * 4096];
-    let y = vec![2.0; 4096 * 4096];
+    let x = vec![1.0; 4096];
+    let y = vec![2.0; 4096];
 
     let product = dispatch(Dotf32(&x, &y));
     println!("dot product(f32): {product}");
 
-    let x = vec![1.0; 4096 * 4096];
-    let y = vec![2.0; 4096 * 4096];
+    let x = vec![1.0; 4096];
+    let y = vec![2.0; 4096];
 
     let product = dispatch(Dotf64(&x, &y));
+    println!("dot product(f64): {product}");
+
+    let x = vec![f16::from_f32(1.0); 4096];
+    let y = vec![f16::from_f32(2.0); 4096];
+
+    let product = dispatch(Dotf16(&x, &y));
+    println!("dot product(f32): {product}");
+
+    let x = vec![bf16::from_f32(1.0); 4096];
+    let y = vec![bf16::from_f32(2.0); 4096];
+
+    let product = dispatch(Dotbf16(&x, &y));
     println!("dot product(f64): {product}");
 }
