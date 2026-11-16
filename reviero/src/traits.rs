@@ -179,7 +179,7 @@ macro_rules! define_halfsimd_compare_ops {
     };
 }
 
-pub trait Simd: FloatSimd {}
+pub trait Simd: FloatSimd + HalfSimd {}
 
 pub trait SimdMask: Copy + Debug + Send + Sync + 'static {
     fn splat(v: bool) -> Self;

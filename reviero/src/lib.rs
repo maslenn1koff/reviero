@@ -75,11 +75,19 @@ enum Backend {
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     Sse2 = 2,
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    Sse2F16c = 6,
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     Avx2Fma = 3,
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    Avx2FmaF16c = 7,
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     Avx512f = 4,
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    Avx512Native = 8,
     #[cfg(target_arch = "aarch64")]
     Neon = 5,
+    #[cfg(target_arch = "aarch64")]
+    NeonF16 = 9,
 }
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))]
@@ -87,7 +95,11 @@ impl Backend {
     fn new() -> Self {
         #[cfg(target_arch = "aarch64")]
         {
-            Backend::Neon
+            if std::arch::is_aarch64_feature_detected!("fp16") {
+                Backend::NeonF16
+            } else {
+                Backend::Neon
+            }
         }
 
         #[cfg(not(target_arch = "aarch64"))]
@@ -95,10 +107,22 @@ impl Backend {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             {
                 if is_x86_feature_detected!("avx512f") && is_x86_feature_detected!("fma") {
+                    if is_x86_feature_detected!("avx512fp16") && is_x86_feature_detected!("avx512vl") && is_x86_feature_detected!("avx512bf16") {
+                        return Backend::Avx512Native;
+                    }
+
                     return Backend::Avx512f;
                 } else if is_x86_feature_detected!("avx2") && is_x86_feature_detected!("fma") {
+                    if is_x86_feature_detected!("f16c") {
+                        return Backend::Avx2FmaF16c;
+                    }
+
                     return Backend::Avx2Fma;
                 } else if is_x86_feature_detected!("sse2") {
+                    if is_x86_feature_detected!("f16c") {
+                        return Backend::Sse2F16c;
+                    }
+
                     return Backend::Sse2;
                 }
             }
@@ -149,17 +173,25 @@ pub fn dispatch<Op: SimdFn>(op: Op) -> Op::Result {
 
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     {
-        if backend == Backend::Avx2Fma as u8 {
-            return unsafe { crate::backend::x86::avx2::vectorize(op) };
+        if backend == Backend::Avx512Native as u8 {
+            return unsafe { crate::backend::x86::avx512::vectorize_native(op) };
         } else if backend == Backend::Avx512f as u8 {
             return unsafe { crate::backend::x86::avx512::vectorize(op) };
+        } else if backend == Backend::Avx2FmaF16c as u8 {
+            return unsafe { crate::backend::x86::avx2::vectorize_f16c(op) };
+        } else if backend == Backend::Avx2Fma as u8 {
+            return unsafe { crate::backend::x86::avx2::vectorize(op) };
+        } else if backend == Backend::Sse2F16c as u8 {
+            return unsafe { crate::backend::x86::sse2::vectorize_f16c(op) };
         } else if backend == Backend::Sse2 as u8 {
             return unsafe { crate::backend::x86::sse2::vectorize(op) };
         }
     }
 
     #[cfg(target_arch = "aarch64")]
-    if backend == Backend::Neon as u8 {
+    if backend == Backend::NeonF16 as u8 {
+        return unsafe { crate::backend::aarch64::neon::vectorize_f16(op) };
+    } else if backend == Backend::Neon as u8 {
         return unsafe { crate::backend::aarch64::neon::vectorize(op) };
     }
 
