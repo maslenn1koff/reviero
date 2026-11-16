@@ -1,9 +1,13 @@
+#![allow(clippy::incompatible_msrv)]
+
 #[cfg(target_arch = "aarch64")]
 use std::arch::aarch64::*;
 
+use half::{bf16, f16};
+
 use crate::{
     SimdFn,
-    traits::{FloatSimd, Simd, SimdMask},
+    traits::{FloatSimd, HalfSimd, Simd, SimdMask},
 };
 
 #[derive(Copy, Clone, Debug)]
@@ -134,21 +138,606 @@ unsafe fn andnot_pd(a: float64x2_t, b: float64x2_t) -> float64x2_t {
     unsafe { vreinterpretq_f64_u64(vbicq_u64(vreinterpretq_u64_f64(b), vreinterpretq_u64_f64(a))) }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct Neon;
+#[inline(always)]
+unsafe fn mask_f16_to_f32(a: uint16x4_t) -> NeonMaskF32 {
+    unsafe { NeonMaskF32(vreinterpretq_u32_s32(vmovl_s16(vreinterpret_s16_u16(a)))) }
+}
 
-impl Default for Neon {
+#[inline(always)]
+unsafe fn mask_f32_to_f16(a: NeonMaskF32) -> uint16x4_t {
+    unsafe { vmovn_u32(a.0) }
+}
+
+#[inline(always)]
+unsafe fn f16_to_bits(a: float16x4_t) -> uint16x4_t {
+    unsafe { std::mem::transmute::<float16x4_t, uint16x4_t>(a) }
+}
+
+#[inline(always)]
+unsafe fn f16_from_bits(a: uint16x4_t) -> float16x4_t {
+    unsafe { std::mem::transmute::<uint16x4_t, float16x4_t>(a) }
+}
+
+pub trait HalfImpl: Copy + Send + Sync + 'static {
+    type f16: Copy + Send + Sync + 'static;
+    type bf16: Copy + Send + Sync + 'static;
+    type m16: SimdMask + Copy + Send + Sync + 'static;
+
+    const f16_lanes: usize = 4;
+
+    fn f16_to_f32(self, a: Self::f16) -> float32x4_t;
+    fn f32_to_f16(self, a: float32x4_t) -> Self::f16;
+    fn bf16_to_f32(self, a: Self::bf16) -> float32x4_t;
+    fn f32_to_bf16(self, a: float32x4_t) -> Self::bf16;
+    fn m16_to_m32(self, a: Self::m16) -> NeonMaskF32;
+    fn m32_to_m16(self, a: NeonMaskF32) -> Self::m16;
+
+    fn splat_f16(self, value: f16) -> Self::f16;
+    fn splat_bf16(self, value: bf16) -> Self::bf16;
+    fn load_f16(self, src: &[f16]) -> Self::f16;
+    fn load_bf16(self, src: &[bf16]) -> Self::bf16;
+    fn store_f16(self, dst: &mut [f16], value: Self::f16);
+    fn store_bf16(self, dst: &mut [bf16], value: Self::bf16);
+
+    fn bitand_f16(self, a: Self::f16, b: Self::f16) -> Self::f16;
+    fn bitor_f16(self, a: Self::f16, b: Self::f16) -> Self::f16;
+    fn bitxor_f16(self, a: Self::f16, b: Self::f16) -> Self::f16;
+    fn bitnot_f16(self, a: Self::f16) -> Self::f16;
+    fn bitandnot_f16(self, a: Self::f16, b: Self::f16) -> Self::f16;
+
+    fn bitand_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16;
+    fn bitor_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16;
+    fn bitxor_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16;
+    fn bitnot_bf16(self, a: Self::bf16) -> Self::bf16;
+    fn bitandnot_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16;
+
+    #[inline(always)]
+    fn abs_f16(self, a: Self::f16) -> Self::f16 {
+        self.f32_to_f16(unsafe { vabsq_f32(self.f16_to_f32(a)) })
+    }
+
+    #[inline(always)]
+    fn neg_f16(self, a: Self::f16) -> Self::f16 {
+        self.f32_to_f16(unsafe { vnegq_f32(self.f16_to_f32(a)) })
+    }
+
+    #[inline(always)]
+    fn sqrt_f16(self, a: Self::f16) -> Self::f16 {
+        self.f32_to_f16(unsafe { vsqrtq_f32(self.f16_to_f32(a)) })
+    }
+
+    #[inline(always)]
+    fn add_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.f32_to_f16(unsafe { vaddq_f32(self.f16_to_f32(a), self.f16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn sub_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.f32_to_f16(unsafe { vsubq_f32(self.f16_to_f32(a), self.f16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn mul_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.f32_to_f16(unsafe { vmulq_f32(self.f16_to_f32(a), self.f16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn div_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.f32_to_f16(unsafe { vdivq_f32(self.f16_to_f32(a), self.f16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn min_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.f32_to_f16(unsafe { vminq_f32(self.f16_to_f32(a), self.f16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn max_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.f32_to_f16(unsafe { vmaxq_f32(self.f16_to_f32(a), self.f16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn mul_add_f16(self, a: Self::f16, b: Self::f16, c: Self::f16) -> Self::f16 {
+        self.f32_to_f16(unsafe { vfmaq_f32(self.f16_to_f32(c), self.f16_to_f32(a), self.f16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn mul_sub_f16(self, a: Self::f16, b: Self::f16, c: Self::f16) -> Self::f16 {
+        self.f32_to_f16(unsafe { vfmaq_f32(vnegq_f32(self.f16_to_f32(c)), self.f16_to_f32(a), self.f16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn nmul_add_f16(self, a: Self::f16, b: Self::f16, c: Self::f16) -> Self::f16 {
+        self.f32_to_f16(unsafe { vfmsq_f32(self.f16_to_f32(c), self.f16_to_f32(a), self.f16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn nmul_sub_f16(self, a: Self::f16, b: Self::f16, c: Self::f16) -> Self::f16 {
+        self.f32_to_f16(unsafe { vfmsq_f32(vnegq_f32(self.f16_to_f32(c)), self.f16_to_f32(a), self.f16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn reduce_sum_f16(self, a: Self::f16) -> f16 {
+        f16::from_f32(unsafe { vaddvq_f32(self.f16_to_f32(a)) })
+    }
+
+    #[inline(always)]
+    fn reduce_max_f16(self, a: Self::f16) -> f16 {
+        f16::from_f32(unsafe { vmaxvq_f32(self.f16_to_f32(a)) })
+    }
+
+    #[inline(always)]
+    fn reduce_min_f16(self, a: Self::f16) -> f16 {
+        f16::from_f32(unsafe { vminvq_f32(self.f16_to_f32(a)) })
+    }
+
+    #[inline(always)]
+    fn eq_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        self.m32_to_m16(NeonMaskF32(unsafe { vceqq_f32(self.f16_to_f32(a), self.f16_to_f32(b)) }))
+    }
+
+    #[inline(always)]
+    fn ne_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        self.m32_to_m16(NeonMaskF32(unsafe { vmvnq_u32(vceqq_f32(self.f16_to_f32(a), self.f16_to_f32(b))) }))
+    }
+
+    #[inline(always)]
+    fn lt_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        self.m32_to_m16(NeonMaskF32(unsafe { vcltq_f32(self.f16_to_f32(a), self.f16_to_f32(b)) }))
+    }
+
+    #[inline(always)]
+    fn le_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        self.m32_to_m16(NeonMaskF32(unsafe { vcleq_f32(self.f16_to_f32(a), self.f16_to_f32(b)) }))
+    }
+
+    #[inline(always)]
+    fn gt_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        self.m32_to_m16(NeonMaskF32(unsafe { vcgtq_f32(self.f16_to_f32(a), self.f16_to_f32(b)) }))
+    }
+
+    #[inline(always)]
+    fn ge_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        self.m32_to_m16(NeonMaskF32(unsafe { vcgeq_f32(self.f16_to_f32(a), self.f16_to_f32(b)) }))
+    }
+
+    #[inline(always)]
+    fn select_f16(self, mask: Self::m16, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.f32_to_f16(unsafe { vbslq_f32(self.m16_to_m32(mask).0, self.f16_to_f32(a), self.f16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn abs_bf16(self, a: Self::bf16) -> Self::bf16 {
+        self.f32_to_bf16(unsafe { vabsq_f32(self.bf16_to_f32(a)) })
+    }
+
+    #[inline(always)]
+    fn neg_bf16(self, a: Self::bf16) -> Self::bf16 {
+        self.f32_to_bf16(unsafe { vnegq_f32(self.bf16_to_f32(a)) })
+    }
+
+    #[inline(always)]
+    fn sqrt_bf16(self, a: Self::bf16) -> Self::bf16 {
+        self.f32_to_bf16(unsafe { vsqrtq_f32(self.bf16_to_f32(a)) })
+    }
+
+    #[inline(always)]
+    fn add_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.f32_to_bf16(unsafe { vaddq_f32(self.bf16_to_f32(a), self.bf16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn sub_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.f32_to_bf16(unsafe { vsubq_f32(self.bf16_to_f32(a), self.bf16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn mul_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.f32_to_bf16(unsafe { vmulq_f32(self.bf16_to_f32(a), self.bf16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn div_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.f32_to_bf16(unsafe { vdivq_f32(self.bf16_to_f32(a), self.bf16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn min_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.f32_to_bf16(unsafe { vminq_f32(self.bf16_to_f32(a), self.bf16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn max_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.f32_to_bf16(unsafe { vmaxq_f32(self.bf16_to_f32(a), self.bf16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn mul_add_bf16(self, a: Self::bf16, b: Self::bf16, c: Self::bf16) -> Self::bf16 {
+        self.f32_to_bf16(unsafe { vfmaq_f32(self.bf16_to_f32(c), self.bf16_to_f32(a), self.bf16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn mul_sub_bf16(self, a: Self::bf16, b: Self::bf16, c: Self::bf16) -> Self::bf16 {
+        self.f32_to_bf16(unsafe { vfmaq_f32(vnegq_f32(self.bf16_to_f32(c)), self.bf16_to_f32(a), self.bf16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn nmul_add_bf16(self, a: Self::bf16, b: Self::bf16, c: Self::bf16) -> Self::bf16 {
+        self.f32_to_bf16(unsafe { vfmsq_f32(self.bf16_to_f32(c), self.bf16_to_f32(a), self.bf16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn nmul_sub_bf16(self, a: Self::bf16, b: Self::bf16, c: Self::bf16) -> Self::bf16 {
+        self.f32_to_bf16(unsafe { vfmsq_f32(vnegq_f32(self.bf16_to_f32(c)), self.bf16_to_f32(a), self.bf16_to_f32(b)) })
+    }
+
+    #[inline(always)]
+    fn reduce_sum_bf16(self, a: Self::bf16) -> bf16 {
+        bf16::from_f32(unsafe { vaddvq_f32(self.bf16_to_f32(a)) })
+    }
+
+    #[inline(always)]
+    fn reduce_max_bf16(self, a: Self::bf16) -> bf16 {
+        bf16::from_f32(unsafe { vmaxvq_f32(self.bf16_to_f32(a)) })
+    }
+
+    #[inline(always)]
+    fn reduce_min_bf16(self, a: Self::bf16) -> bf16 {
+        bf16::from_f32(unsafe { vminvq_f32(self.bf16_to_f32(a)) })
+    }
+
+    #[inline(always)]
+    fn eq_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::m16 {
+        self.m32_to_m16(NeonMaskF32(unsafe { vceqq_f32(self.bf16_to_f32(a), self.bf16_to_f32(b)) }))
+    }
+
+    #[inline(always)]
+    fn ne_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::m16 {
+        self.m32_to_m16(NeonMaskF32(unsafe { vmvnq_u32(vceqq_f32(self.bf16_to_f32(a), self.bf16_to_f32(b))) }))
+    }
+
+    #[inline(always)]
+    fn lt_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::m16 {
+        self.m32_to_m16(NeonMaskF32(unsafe { vcltq_f32(self.bf16_to_f32(a), self.bf16_to_f32(b)) }))
+    }
+
+    #[inline(always)]
+    fn le_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::m16 {
+        self.m32_to_m16(NeonMaskF32(unsafe { vcleq_f32(self.bf16_to_f32(a), self.bf16_to_f32(b)) }))
+    }
+
+    #[inline(always)]
+    fn gt_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::m16 {
+        self.m32_to_m16(NeonMaskF32(unsafe { vcgtq_f32(self.bf16_to_f32(a), self.bf16_to_f32(b)) }))
+    }
+
+    #[inline(always)]
+    fn ge_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::m16 {
+        self.m32_to_m16(NeonMaskF32(unsafe { vcgeq_f32(self.bf16_to_f32(a), self.bf16_to_f32(b)) }))
+    }
+
+    #[inline(always)]
+    fn select_bf16(self, mask: Self::m16, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.f32_to_bf16(unsafe { vbslq_f32(self.m16_to_m32(mask).0, self.bf16_to_f32(a), self.bf16_to_f32(b)) })
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct HalfImplSoftware;
+
+#[derive(Clone, Copy)]
+pub struct HalfImplF16;
+
+impl HalfImpl for HalfImplSoftware {
+    type f16 = float32x4_t;
+    type bf16 = float32x4_t;
+    type m16 = NeonMaskF32;
+
+    #[rustfmt::skip] #[inline(always)]    fn f16_to_f32(self, a: Self::f16) -> float32x4_t { a }
+    #[rustfmt::skip] #[inline(always)]    fn f32_to_f16(self, a: float32x4_t) -> Self::f16 { a }
+    #[rustfmt::skip] #[inline(always)]    fn bf16_to_f32(self, a: Self::bf16) -> float32x4_t { a }
+    #[rustfmt::skip] #[inline(always)]    fn f32_to_bf16(self, a: float32x4_t) -> Self::bf16 { a }
+    #[rustfmt::skip] #[inline(always)]    fn m16_to_m32(self, a: Self::m16) -> NeonMaskF32 { a }
+    #[rustfmt::skip] #[inline(always)]    fn m32_to_m16(self, a: NeonMaskF32) -> Self::m16 { a }
+
+    #[inline(always)]
+    fn splat_f16(self, value: f16) -> Self::f16 {
+        unsafe { vdupq_n_f32(value.to_f32()) }
+    }
+
+    #[inline(always)]
+    fn splat_bf16(self, value: bf16) -> Self::bf16 {
+        unsafe { vdupq_n_f32(value.to_f32()) }
+    }
+
+    #[inline(always)]
+    fn load_f16(self, src: &[f16]) -> Self::f16 {
+        let mut fsrc = [0.0f32; 4];
+        for (dst, src) in fsrc.iter_mut().zip(src) {
+            *dst = src.to_f32();
+        }
+
+        unsafe { vld1q_f32(fsrc.as_ptr()) }
+    }
+
+    #[inline(always)]
+    fn load_bf16(self, src: &[bf16]) -> Self::bf16 {
+        let mut fsrc = [0.0f32; 4];
+        for (dst, src) in fsrc.iter_mut().zip(src) {
+            *dst = src.to_f32();
+        }
+
+        unsafe { vld1q_f32(fsrc.as_ptr()) }
+    }
+
+    #[inline(always)]
+    fn store_f16(self, dst: &mut [f16], value: Self::f16) {
+        let mut fdst = [0.0f32; 4];
+        unsafe { vst1q_f32(fdst.as_mut_ptr(), value) };
+
+        for (dst, value) in dst.iter_mut().zip(fdst) {
+            *dst = f16::from_f32(value);
+        }
+    }
+
+    #[inline(always)]
+    fn store_bf16(self, dst: &mut [bf16], value: Self::bf16) {
+        let mut fdst = [0.0f32; 4];
+        unsafe { vst1q_f32(fdst.as_mut_ptr(), value) };
+
+        for (dst, value) in dst.iter_mut().zip(fdst) {
+            *dst = bf16::from_f32(value);
+        }
+    }
+
+    #[inline(always)]
+    fn bitand_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { and_ps(a, b) }
+    }
+
+    #[inline(always)]
+    fn bitor_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { or_ps(a, b) }
+    }
+
+    #[inline(always)]
+    fn bitxor_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { xor_ps(a, b) }
+    }
+
+    #[inline(always)]
+    fn bitnot_f16(self, a: Self::f16) -> Self::f16 {
+        unsafe { vreinterpretq_f32_u32(vmvnq_u32(vreinterpretq_u32_f32(a))) }
+    }
+
+    #[inline(always)]
+    fn bitandnot_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { andnot_ps(a, b) }
+    }
+
+    #[inline(always)]
+    fn bitand_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        unsafe { and_ps(a, b) }
+    }
+
+    #[inline(always)]
+    fn bitor_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        unsafe { or_ps(a, b) }
+    }
+
+    #[inline(always)]
+    fn bitxor_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        unsafe { xor_ps(a, b) }
+    }
+
+    #[inline(always)]
+    fn bitnot_bf16(self, a: Self::bf16) -> Self::bf16 {
+        unsafe { vreinterpretq_f32_u32(vmvnq_u32(vreinterpretq_u32_f32(a))) }
+    }
+
+    #[inline(always)]
+    fn bitandnot_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        unsafe { andnot_ps(a, b) }
+    }
+}
+
+impl HalfImpl for HalfImplF16 {
+    type f16 = float16x4_t;
+    type bf16 = float32x4_t;
+    type m16 = NeonMaskF32;
+
+    #[inline(always)]
+    fn f16_to_f32(self, a: Self::f16) -> float32x4_t {
+        unsafe { vcvt_f32_f16(a) }
+    }
+
+    #[inline(always)]
+    fn f32_to_f16(self, a: float32x4_t) -> Self::f16 {
+        unsafe { vcvt_f16_f32(a) }
+    }
+
+    #[rustfmt::skip] #[inline(always)]    fn bf16_to_f32(self, a: Self::bf16) -> float32x4_t { HalfImplSoftware.bf16_to_f32(a) }
+    #[rustfmt::skip] #[inline(always)]    fn f32_to_bf16(self, a: float32x4_t) -> Self::bf16 { HalfImplSoftware.f32_to_bf16(a) }
+    #[rustfmt::skip] #[inline(always)]    fn m16_to_m32(self, a: Self::m16) -> NeonMaskF32 { a }
+    #[rustfmt::skip] #[inline(always)]    fn m32_to_m16(self, a: NeonMaskF32) -> Self::m16 { a }
+
+    #[inline(always)]
+    fn splat_f16(self, value: f16) -> Self::f16 {
+        unsafe { f16_from_bits(vdup_n_u16(value.to_bits())) }
+    }
+
+    #[rustfmt::skip] #[inline(always)]    fn splat_bf16(self, value: bf16) -> Self::bf16 { HalfImplSoftware.splat_bf16(value) }
+
+    #[inline(always)]
+    fn load_f16(self, src: &[f16]) -> Self::f16 {
+        unsafe { f16_from_bits(vld1_u16(src.as_ptr().cast())) }
+    }
+
+    #[rustfmt::skip] #[inline(always)]    fn load_bf16(self, src: &[bf16]) -> Self::bf16 { HalfImplSoftware.load_bf16(src) }
+
+    #[inline(always)]
+    fn store_f16(self, dst: &mut [f16], value: Self::f16) {
+        unsafe { vst1_u16(dst.as_mut_ptr().cast(), f16_to_bits(value)) };
+    }
+
+    #[rustfmt::skip] #[inline(always)]    fn store_bf16(self, dst: &mut [bf16], value: Self::bf16) { HalfImplSoftware.store_bf16(dst, value) }
+
+    #[inline(always)]
+    fn bitand_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { f16_from_bits(vand_u16(f16_to_bits(a), f16_to_bits(b))) }
+    }
+
+    #[inline(always)]
+    fn bitor_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { f16_from_bits(vorr_u16(f16_to_bits(a), f16_to_bits(b))) }
+    }
+
+    #[inline(always)]
+    fn bitxor_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { f16_from_bits(veor_u16(f16_to_bits(a), f16_to_bits(b))) }
+    }
+
+    #[inline(always)]
+    fn bitnot_f16(self, a: Self::f16) -> Self::f16 {
+        unsafe { f16_from_bits(vmvn_u16(f16_to_bits(a))) }
+    }
+
+    #[inline(always)]
+    fn bitandnot_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { f16_from_bits(vbic_u16(f16_to_bits(b), f16_to_bits(a))) }
+    }
+
+    #[rustfmt::skip] #[inline(always)]    fn bitand_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 { HalfImplSoftware.bitand_bf16(a, b) }
+    #[rustfmt::skip] #[inline(always)]    fn bitor_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 { HalfImplSoftware.bitor_bf16(a, b) }
+    #[rustfmt::skip] #[inline(always)]    fn bitxor_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 { HalfImplSoftware.bitxor_bf16(a, b) }
+    #[rustfmt::skip] #[inline(always)]    fn bitnot_bf16(self, a: Self::bf16) -> Self::bf16 { HalfImplSoftware.bitnot_bf16(a) }
+    #[rustfmt::skip] #[inline(always)]    fn bitandnot_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 { HalfImplSoftware.bitandnot_bf16(a, b) }
+
+    #[inline(always)]
+    fn abs_f16(self, a: Self::f16) -> Self::f16 {
+        unsafe { vabs_f16(a) }
+    }
+
+    #[inline(always)]
+    fn neg_f16(self, a: Self::f16) -> Self::f16 {
+        unsafe { vneg_f16(a) }
+    }
+
+    #[inline(always)]
+    fn sqrt_f16(self, a: Self::f16) -> Self::f16 {
+        unsafe { vsqrt_f16(a) }
+    }
+
+    #[inline(always)]
+    fn add_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { vadd_f16(a, b) }
+    }
+
+    #[inline(always)]
+    fn sub_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { vsub_f16(a, b) }
+    }
+
+    #[inline(always)]
+    fn mul_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { vmul_f16(a, b) }
+    }
+
+    #[inline(always)]
+    fn div_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { vdiv_f16(a, b) }
+    }
+
+    #[inline(always)]
+    fn min_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { vmin_f16(a, b) }
+    }
+
+    #[inline(always)]
+    fn max_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { vmax_f16(a, b) }
+    }
+
+    #[inline(always)]
+    fn mul_add_f16(self, a: Self::f16, b: Self::f16, c: Self::f16) -> Self::f16 {
+        unsafe { vfma_f16(c, a, b) }
+    }
+
+    #[inline(always)]
+    fn mul_sub_f16(self, a: Self::f16, b: Self::f16, c: Self::f16) -> Self::f16 {
+        unsafe { vfma_f16(vneg_f16(c), a, b) }
+    }
+
+    #[inline(always)]
+    fn nmul_add_f16(self, a: Self::f16, b: Self::f16, c: Self::f16) -> Self::f16 {
+        unsafe { vfms_f16(c, a, b) }
+    }
+
+    #[inline(always)]
+    fn nmul_sub_f16(self, a: Self::f16, b: Self::f16, c: Self::f16) -> Self::f16 {
+        unsafe { vfms_f16(vneg_f16(c), a, b) }
+    }
+
+    #[inline(always)]
+    fn eq_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        unsafe { mask_f16_to_f32(vceq_f16(a, b)) }
+    }
+
+    #[inline(always)]
+    fn ne_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        unsafe { mask_f16_to_f32(vmvn_u16(vceq_f16(a, b))) }
+    }
+
+    #[inline(always)]
+    fn lt_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        unsafe { mask_f16_to_f32(vclt_f16(a, b)) }
+    }
+
+    #[inline(always)]
+    fn le_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        unsafe { mask_f16_to_f32(vcle_f16(a, b)) }
+    }
+
+    #[inline(always)]
+    fn gt_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        unsafe { mask_f16_to_f32(vcgt_f16(a, b)) }
+    }
+
+    #[inline(always)]
+    fn ge_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        unsafe { mask_f16_to_f32(vcge_f16(a, b)) }
+    }
+
+    #[inline(always)]
+    fn select_f16(self, mask: Self::m16, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { vbsl_f16(mask_f32_to_f16(mask), a, b) }
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct Neon<H: HalfImpl>(pub H);
+
+impl Default for Neon<HalfImplSoftware> {
     fn default() -> Self {
-        Neon
+        Neon(HalfImplSoftware)
     }
 }
 
 #[target_feature(enable = "neon")]
 pub unsafe fn vectorize<Op: SimdFn>(op: Op) -> Op::Result {
-    op.call(Neon)
+    if std::arch::is_aarch64_feature_detected!("fp16") {
+        unsafe { vectorize_f16(op) }
+    } else {
+        op.call(Neon(HalfImplSoftware))
+    }
 }
 
-impl FloatSimd for Neon {
+#[target_feature(enable = "neon", enable = "fp16")]
+pub unsafe fn vectorize_f16<Op: SimdFn>(op: Op) -> Op::Result {
+    op.call(Neon(HalfImplF16))
+}
+
+impl<H: HalfImpl> FloatSimd for Neon<H> {
     type f32 = float32x4_t;
     type f64 = float64x2_t;
 
@@ -497,7 +1086,356 @@ impl FloatSimd for Neon {
     }
 }
 
-impl Simd for Neon {}
+impl<H: HalfImpl> HalfSimd for Neon<H> {
+    type f16 = H::f16;
+    type bf16 = H::bf16;
+    type m16 = H::m16;
+
+    const f16_lanes: usize = H::f16_lanes;
+
+    #[rustfmt::skip] #[inline(always)]    fn f16_to_f32(self, a: Self::f16) -> Self::f32 { self.0.f16_to_f32(a) }
+    #[rustfmt::skip] #[inline(always)]    fn f32_to_f16(self, a: Self::f32) -> Self::f16 { self.0.f32_to_f16(a) }
+    #[rustfmt::skip] #[inline(always)]    fn bf16_to_f32(self, a: Self::bf16) -> Self::f32 { self.0.bf16_to_f32(a) }
+    #[rustfmt::skip] #[inline(always)]    fn f32_to_bf16(self, a: Self::f32) -> Self::bf16 { self.0.f32_to_bf16(a) }
+    #[rustfmt::skip] #[inline(always)]    fn m16_to_m32(self, a: Self::m16) -> Self::m32 { self.0.m16_to_m32(a) }
+    #[rustfmt::skip] #[inline(always)]    fn m32_to_m16(self, a: Self::m32) -> Self::m16 { self.0.m32_to_m16(a) }
+
+    #[inline(always)]
+    fn splat_f16(self, value: f16) -> Self::f16 {
+        self.0.splat_f16(value)
+    }
+
+    #[inline(always)]
+    fn splat_bf16(self, value: bf16) -> Self::bf16 {
+        self.0.splat_bf16(value)
+    }
+
+    #[inline(always)]
+    fn load_f16(self, src: &[f16]) -> Self::f16 {
+        assert!(src.len() >= Self::f16_lanes);
+        self.0.load_f16(src)
+    }
+
+    #[inline(always)]
+    fn load_bf16(self, src: &[bf16]) -> Self::bf16 {
+        assert!(src.len() >= Self::f16_lanes);
+        self.0.load_bf16(src)
+    }
+
+    #[inline(always)]
+    fn store_f16(self, dst: &mut [f16], value: Self::f16) {
+        assert!(dst.len() >= Self::f16_lanes);
+        self.0.store_f16(dst, value)
+    }
+
+    #[inline(always)]
+    fn store_bf16(self, dst: &mut [bf16], value: Self::bf16) {
+        assert!(dst.len() >= Self::f16_lanes);
+        self.0.store_bf16(dst, value)
+    }
+
+    #[inline(always)]
+    unsafe fn load_unchecked_f16(self, src: &[f16]) -> Self::f16 {
+        self.0.load_f16(src)
+    }
+
+    #[inline(always)]
+    unsafe fn load_unchecked_bf16(self, src: &[bf16]) -> Self::bf16 {
+        self.0.load_bf16(src)
+    }
+
+    #[inline(always)]
+    unsafe fn store_unchecked_f16(self, dst: &mut [f16], value: Self::f16) {
+        self.0.store_f16(dst, value)
+    }
+
+    #[inline(always)]
+    unsafe fn store_unchecked_bf16(self, dst: &mut [bf16], value: Self::bf16) {
+        self.0.store_bf16(dst, value)
+    }
+
+    #[inline(always)]
+    fn abs_f16(self, a: Self::f16) -> Self::f16 {
+        self.0.abs_f16(a)
+    }
+
+    #[inline(always)]
+    fn neg_f16(self, a: Self::f16) -> Self::f16 {
+        self.0.neg_f16(a)
+    }
+
+    #[inline(always)]
+    fn sqrt_f16(self, a: Self::f16) -> Self::f16 {
+        self.0.sqrt_f16(a)
+    }
+
+    #[inline(always)]
+    fn bitnot_f16(self, a: Self::f16) -> Self::f16 {
+        self.0.bitnot_f16(a)
+    }
+
+    #[inline(always)]
+    fn add_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.0.add_f16(a, b)
+    }
+
+    #[inline(always)]
+    fn sub_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.0.sub_f16(a, b)
+    }
+
+    #[inline(always)]
+    fn mul_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.0.mul_f16(a, b)
+    }
+
+    #[inline(always)]
+    fn div_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.0.div_f16(a, b)
+    }
+
+    #[inline(always)]
+    fn min_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.0.min_f16(a, b)
+    }
+
+    #[inline(always)]
+    fn max_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.0.max_f16(a, b)
+    }
+
+    #[inline(always)]
+    fn bitand_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.0.bitand_f16(a, b)
+    }
+
+    #[inline(always)]
+    fn bitor_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.0.bitor_f16(a, b)
+    }
+
+    #[inline(always)]
+    fn bitxor_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.0.bitxor_f16(a, b)
+    }
+
+    #[inline(always)]
+    fn bitandnot_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.0.bitandnot_f16(a, b)
+    }
+
+    #[inline(always)]
+    fn mul_add_f16(self, a: Self::f16, b: Self::f16, c: Self::f16) -> Self::f16 {
+        self.0.mul_add_f16(a, b, c)
+    }
+
+    #[inline(always)]
+    fn mul_sub_f16(self, a: Self::f16, b: Self::f16, c: Self::f16) -> Self::f16 {
+        self.0.mul_sub_f16(a, b, c)
+    }
+
+    #[inline(always)]
+    fn nmul_add_f16(self, a: Self::f16, b: Self::f16, c: Self::f16) -> Self::f16 {
+        self.0.nmul_add_f16(a, b, c)
+    }
+
+    #[inline(always)]
+    fn nmul_sub_f16(self, a: Self::f16, b: Self::f16, c: Self::f16) -> Self::f16 {
+        self.0.nmul_sub_f16(a, b, c)
+    }
+
+    #[inline(always)]
+    fn reduce_sum_f16(self, a: Self::f16) -> f16 {
+        self.0.reduce_sum_f16(a)
+    }
+
+    #[inline(always)]
+    fn reduce_max_f16(self, a: Self::f16) -> f16 {
+        self.0.reduce_max_f16(a)
+    }
+
+    #[inline(always)]
+    fn reduce_min_f16(self, a: Self::f16) -> f16 {
+        self.0.reduce_min_f16(a)
+    }
+
+    #[inline(always)]
+    fn eq_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        self.0.eq_f16(a, b)
+    }
+
+    #[inline(always)]
+    fn ne_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        self.0.ne_f16(a, b)
+    }
+
+    #[inline(always)]
+    fn lt_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        self.0.lt_f16(a, b)
+    }
+
+    #[inline(always)]
+    fn le_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        self.0.le_f16(a, b)
+    }
+
+    #[inline(always)]
+    fn gt_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        self.0.gt_f16(a, b)
+    }
+
+    #[inline(always)]
+    fn ge_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
+        self.0.ge_f16(a, b)
+    }
+
+    #[inline(always)]
+    fn select_f16(self, mask: Self::m16, a: Self::f16, b: Self::f16) -> Self::f16 {
+        self.0.select_f16(mask, a, b)
+    }
+
+    #[inline(always)]
+    fn abs_bf16(self, a: Self::bf16) -> Self::bf16 {
+        self.0.abs_bf16(a)
+    }
+
+    #[inline(always)]
+    fn neg_bf16(self, a: Self::bf16) -> Self::bf16 {
+        self.0.neg_bf16(a)
+    }
+
+    #[inline(always)]
+    fn sqrt_bf16(self, a: Self::bf16) -> Self::bf16 {
+        self.0.sqrt_bf16(a)
+    }
+
+    #[inline(always)]
+    fn bitnot_bf16(self, a: Self::bf16) -> Self::bf16 {
+        self.0.bitnot_bf16(a)
+    }
+
+    #[inline(always)]
+    fn add_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.0.add_bf16(a, b)
+    }
+
+    #[inline(always)]
+    fn sub_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.0.sub_bf16(a, b)
+    }
+
+    #[inline(always)]
+    fn mul_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.0.mul_bf16(a, b)
+    }
+
+    #[inline(always)]
+    fn div_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.0.div_bf16(a, b)
+    }
+
+    #[inline(always)]
+    fn min_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.0.min_bf16(a, b)
+    }
+
+    #[inline(always)]
+    fn max_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.0.max_bf16(a, b)
+    }
+
+    #[inline(always)]
+    fn bitand_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.0.bitand_bf16(a, b)
+    }
+
+    #[inline(always)]
+    fn bitor_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.0.bitor_bf16(a, b)
+    }
+
+    #[inline(always)]
+    fn bitxor_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.0.bitxor_bf16(a, b)
+    }
+
+    #[inline(always)]
+    fn bitandnot_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.0.bitandnot_bf16(a, b)
+    }
+
+    #[inline(always)]
+    fn mul_add_bf16(self, a: Self::bf16, b: Self::bf16, c: Self::bf16) -> Self::bf16 {
+        self.0.mul_add_bf16(a, b, c)
+    }
+
+    #[inline(always)]
+    fn mul_sub_bf16(self, a: Self::bf16, b: Self::bf16, c: Self::bf16) -> Self::bf16 {
+        self.0.mul_sub_bf16(a, b, c)
+    }
+
+    #[inline(always)]
+    fn nmul_add_bf16(self, a: Self::bf16, b: Self::bf16, c: Self::bf16) -> Self::bf16 {
+        self.0.nmul_add_bf16(a, b, c)
+    }
+
+    #[inline(always)]
+    fn nmul_sub_bf16(self, a: Self::bf16, b: Self::bf16, c: Self::bf16) -> Self::bf16 {
+        self.0.nmul_sub_bf16(a, b, c)
+    }
+
+    #[inline(always)]
+    fn reduce_sum_bf16(self, a: Self::bf16) -> bf16 {
+        self.0.reduce_sum_bf16(a)
+    }
+
+    #[inline(always)]
+    fn reduce_max_bf16(self, a: Self::bf16) -> bf16 {
+        self.0.reduce_max_bf16(a)
+    }
+
+    #[inline(always)]
+    fn reduce_min_bf16(self, a: Self::bf16) -> bf16 {
+        self.0.reduce_min_bf16(a)
+    }
+
+    #[inline(always)]
+    fn eq_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::m16 {
+        self.0.eq_bf16(a, b)
+    }
+
+    #[inline(always)]
+    fn ne_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::m16 {
+        self.0.ne_bf16(a, b)
+    }
+
+    #[inline(always)]
+    fn lt_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::m16 {
+        self.0.lt_bf16(a, b)
+    }
+
+    #[inline(always)]
+    fn le_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::m16 {
+        self.0.le_bf16(a, b)
+    }
+
+    #[inline(always)]
+    fn gt_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::m16 {
+        self.0.gt_bf16(a, b)
+    }
+
+    #[inline(always)]
+    fn ge_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::m16 {
+        self.0.ge_bf16(a, b)
+    }
+
+    #[inline(always)]
+    fn select_bf16(self, mask: Self::m16, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        self.0.select_bf16(mask, a, b)
+    }
+}
+
+impl<H: HalfImpl> Simd for Neon<H> {}
 
 #[cfg(test)]
 fn run(check: crate::backend::test_utils::Check) {
@@ -505,4 +1443,4 @@ fn run(check: crate::backend::test_utils::Check) {
 }
 
 #[cfg(test)]
-crate::backend_tests!(Neon, 4, 2);
+crate::backend_tests!(Neon<HalfImplSoftware>, 4, 2);
