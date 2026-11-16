@@ -1,3 +1,4 @@
+use half::{bf16, f16};
 #[cfg(target_arch = "x86")]
 use std::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
@@ -5,7 +6,7 @@ use std::arch::x86_64::*;
 
 use crate::{
     SimdFn,
-    traits::{FloatSimd, Simd, SimdMask},
+    traits::{FloatSimd, HalfSimd, Simd, SimdMask},
 };
 
 #[derive(Copy, Clone, Debug)]
@@ -105,24 +106,166 @@ impl SimdMask for Sse2MaskF64 {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct Sse2;
+pub trait HalfConv {
+    unsafe fn splat_f16(value: f16) -> __m128;
+    unsafe fn splat_bf16(value: bf16) -> __m128;
+    unsafe fn load_f16(src: &[f16]) -> __m128;
+    unsafe fn load_bf16(src: &[bf16]) -> __m128;
+    unsafe fn store_f16(dst: &mut [f16], value: __m128);
+    unsafe fn store_bf16(dst: &mut [bf16], value: __m128);
+}
 
-impl Default for Sse2 {
-    fn default() -> Self {
-        Sse2
+#[derive(Clone, Copy)]
+pub struct HalfConvSoftware;
+
+#[derive(Clone, Copy)]
+pub struct HalfConvF16c;
+
+impl HalfConv for HalfConvSoftware {
+    #[inline(always)]
+    unsafe fn splat_f16(value: f16) -> __m128 {
+        unsafe { _mm_set1_ps(value.to_f32()) }
+    }
+
+    #[inline(always)]
+    unsafe fn splat_bf16(value: bf16) -> __m128 {
+        unsafe { _mm_set1_ps(value.to_f32()) }
+    }
+
+    #[inline(always)]
+    unsafe fn load_f16(src: &[f16]) -> __m128 {
+        let mut fsrc = [0.0f32; 4];
+
+        for (dst, src) in fsrc.iter_mut().zip(src) {
+            *dst = src.to_f32();
+        }
+
+        unsafe { _mm_loadu_ps(fsrc.as_ptr()) }
+    }
+
+    #[inline(always)]
+    unsafe fn load_bf16(src: &[bf16]) -> __m128 {
+        let mut fsrc = [0.0f32; 4];
+
+        for (dst, src) in fsrc.iter_mut().zip(src) {
+            *dst = src.to_f32();
+        }
+
+        unsafe { _mm_loadu_ps(fsrc.as_ptr()) }
+    }
+
+    #[inline(always)]
+    unsafe fn store_f16(dst: &mut [f16], value: __m128) {
+        let mut fdst = [0.0f32; 4];
+        unsafe { _mm_storeu_ps(fdst.as_mut_ptr(), value) };
+
+        for (dst, value) in dst.iter_mut().zip(fdst) {
+            *dst = f16::from_f32(value);
+        }
+    }
+
+    #[inline(always)]
+    unsafe fn store_bf16(dst: &mut [bf16], value: __m128) {
+        let mut fdst = [0.0f32; 4];
+        unsafe { _mm_storeu_ps(fdst.as_mut_ptr(), value) };
+
+        for (dst, value) in dst.iter_mut().zip(fdst) {
+            *dst = bf16::from_f32(value);
+        }
     }
 }
 
-#[target_feature(enable = "sse2")]
-pub unsafe fn vectorize<Op: SimdFn>(op: Op) -> Op::Result {
-    op.call(Sse2)
+impl HalfConv for HalfConvF16c {
+    #[inline(always)]
+    unsafe fn splat_f16(value: f16) -> __m128 {
+        unsafe { _mm_set1_ps(value.to_f32()) }
+    }
+
+    #[inline(always)]
+    unsafe fn splat_bf16(value: bf16) -> __m128 {
+        unsafe { _mm_set1_ps(value.to_f32()) }
+    }
+
+    #[inline(always)]
+    unsafe fn load_f16(src: &[f16]) -> __m128 {
+        unsafe {
+            let packed = _mm_loadl_epi64(src.as_ptr().cast());
+            _mm_cvtph_ps(packed)
+        }
+    }
+
+    #[inline(always)]
+    unsafe fn load_bf16(src: &[bf16]) -> __m128 {
+        unsafe {
+            let packed = _mm_loadl_epi64(src.as_ptr().cast());
+
+            let expanded = _mm_unpacklo_epi16(packed, _mm_setzero_si128());
+
+            let expanded = _mm_slli_epi32::<16>(expanded);
+
+            _mm_castsi128_ps(expanded)
+        }
+    }
+
+    #[inline(always)]
+    unsafe fn store_f16(dst: &mut [f16], value: __m128) {
+        unsafe {
+            let packed = _mm_cvtps_ph(value, _MM_FROUND_TO_NEAREST_INT);
+
+            _mm_storel_epi64(dst.as_mut_ptr().cast(), packed);
+        }
+    }
+
+    #[inline(always)]
+    unsafe fn store_bf16(dst: &mut [bf16], value: __m128) {
+        unsafe {
+            let bits = _mm_castps_si128(value);
+
+            let lsb = _mm_and_si128(_mm_srli_epi32::<16>(bits), _mm_set1_epi32(1));
+
+            let rounded = _mm_add_epi32(bits, _mm_add_epi32(_mm_set1_epi32(0x7FFF), lsb));
+
+            let mut upper = _mm_srli_epi32::<16>(rounded);
+
+            let exponent = _mm_and_si128(bits, _mm_set1_epi32(0x7F800000));
+
+            let mantissa = _mm_and_si128(bits, _mm_set1_epi32(0x007FFFFF));
+
+            let is_inf_or_nan = _mm_cmpeq_epi32(exponent, _mm_set1_epi32(0x7F800000));
+
+            let has_mantissa = _mm_cmpgt_epi32(mantissa, _mm_setzero_si128());
+
+            let is_nan = _mm_and_si128(is_inf_or_nan, has_mantissa);
+
+            upper = _mm_or_si128(upper, _mm_and_si128(is_nan, _mm_set1_epi32(0x40)));
+
+            let shifted = _mm_sub_epi32(upper, _mm_set1_epi32(0x8000));
+
+            let packed = _mm_packs_epi32(shifted, _mm_setzero_si128());
+
+            let packed = _mm_xor_si128(packed, _mm_set1_epi16(i16::MIN));
+
+            _mm_storel_epi64(dst.as_mut_ptr().cast(), packed);
+        }
+    }
 }
 
-impl FloatSimd for Sse2 {
+#[derive(Copy, Clone, Debug)]
+pub struct Sse2<C: HalfConv>(pub C);
+
+#[target_feature(enable = "sse2")]
+pub unsafe fn vectorize<Op: SimdFn>(op: Op) -> Op::Result {
+    op.call(Sse2(HalfConvSoftware))
+}
+
+#[target_feature(enable = "sse2", enable = "f16c")]
+pub unsafe fn vectorize_f16c<Op: SimdFn>(op: Op) -> Op::Result {
+    op.call(Sse2(HalfConvF16c))
+}
+
+impl<C: HalfConv + Sync + Send + Copy + 'static> FloatSimd for Sse2<C> {
     type f32 = __m128;
     type f64 = __m128d;
-
     type m32 = Sse2MaskF32;
     type m64 = Sse2MaskF64;
 
@@ -486,7 +629,125 @@ impl FloatSimd for Sse2 {
     }
 }
 
-impl Simd for Sse2 {}
+impl<C: HalfConv + Sync + Send + Copy + 'static> HalfSimd for Sse2<C> {
+    type f16 = __m128;
+    type bf16 = __m128;
+    type m16 = Sse2MaskF32;
+    const f16_lanes: usize = 4;
+
+    #[rustfmt::skip] #[inline(always)]    fn f16_to_f32(self, a: Self::f16) -> Self::f32 { a }
+    #[rustfmt::skip] #[inline(always)]    fn f32_to_f16(self, a: Self::f32) -> Self::f16 { a }
+    #[rustfmt::skip] #[inline(always)]    fn bf16_to_f32(self, a: Self::bf16) -> Self::f32 { a }
+    #[rustfmt::skip] #[inline(always)]    fn f32_to_bf16(self, a: Self::f32) -> Self::bf16 { a }
+    #[rustfmt::skip] #[inline(always)]    fn m16_to_m32(self, a: Self::m16) -> Self::m32 { a }
+    #[rustfmt::skip] #[inline(always)]    fn m32_to_m16(self, a: Self::m32) -> Self::m16 { a }
+
+    #[inline(always)]
+    fn splat_f16(self, value: f16) -> Self::f16 {
+        unsafe { C::splat_f16(value) }
+    }
+
+    #[inline(always)]
+    fn splat_bf16(self, value: bf16) -> Self::bf16 {
+        unsafe { C::splat_bf16(value) }
+    }
+
+    #[inline(always)]
+    fn load_f16(self, src: &[f16]) -> Self::f16 {
+        assert!(src.len() >= Self::f16_lanes);
+        unsafe { C::load_f16(src) }
+    }
+
+    #[inline(always)]
+    fn load_bf16(self, src: &[bf16]) -> Self::bf16 {
+        assert!(src.len() >= Self::f16_lanes);
+        unsafe { C::load_bf16(src) }
+    }
+
+    #[inline(always)]
+    fn store_f16(self, dst: &mut [f16], value: Self::f16) {
+        assert!(dst.len() >= Self::f16_lanes);
+        unsafe { C::store_f16(dst, value) }
+    }
+
+    #[inline(always)]
+    fn store_bf16(self, dst: &mut [bf16], value: Self::bf16) {
+        assert!(dst.len() >= Self::f16_lanes);
+        unsafe { C::store_bf16(dst, value) }
+    }
+
+    #[inline(always)]
+    unsafe fn load_unchecked_f16(self, src: &[f16]) -> Self::f16 {
+        unsafe { C::load_f16(src) }
+    }
+
+    #[inline(always)]
+    unsafe fn load_unchecked_bf16(self, src: &[bf16]) -> Self::bf16 {
+        unsafe { C::load_bf16(src) }
+    }
+
+    #[inline(always)]
+    unsafe fn store_unchecked_f16(self, dst: &mut [f16], value: Self::f16) {
+        unsafe { C::store_f16(dst, value) }
+    }
+
+    #[inline(always)]
+    unsafe fn store_unchecked_bf16(self, dst: &mut [bf16], value: Self::bf16) {
+        unsafe { C::store_bf16(dst, value) }
+    }
+
+    #[inline(always)]
+    fn bitand_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { _mm_castsi128_ps(_mm_and_si128(_mm_castps_si128(a), _mm_castps_si128(b))) }
+    }
+
+    #[inline(always)]
+    fn bitor_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { _mm_castsi128_ps(_mm_or_si128(_mm_castps_si128(a), _mm_castps_si128(b))) }
+    }
+
+    #[inline(always)]
+    fn bitxor_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { _mm_castsi128_ps(_mm_xor_si128(_mm_castps_si128(a), _mm_castps_si128(b))) }
+    }
+
+    #[inline(always)]
+    fn bitnot_f16(self, a: Self::f16) -> Self::f16 {
+        unsafe { _mm_castsi128_ps(_mm_xor_si128(_mm_castps_si128(a), _mm_set1_epi32(-1))) }
+    }
+
+    #[inline(always)]
+    fn bitandnot_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
+        unsafe { _mm_castsi128_ps(_mm_andnot_si128(_mm_castps_si128(a), _mm_castps_si128(b))) }
+    }
+
+    #[inline(always)]
+    fn bitand_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        unsafe { _mm_castsi128_ps(_mm_and_si128(_mm_castps_si128(a), _mm_castps_si128(b))) }
+    }
+
+    #[inline(always)]
+    fn bitor_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        unsafe { _mm_castsi128_ps(_mm_or_si128(_mm_castps_si128(a), _mm_castps_si128(b))) }
+    }
+
+    #[inline(always)]
+    fn bitxor_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        unsafe { _mm_castsi128_ps(_mm_xor_si128(_mm_castps_si128(a), _mm_castps_si128(b))) }
+    }
+
+    #[inline(always)]
+    fn bitnot_bf16(self, a: Self::bf16) -> Self::bf16 {
+        unsafe { _mm_castsi128_ps(_mm_xor_si128(_mm_castps_si128(a), _mm_set1_epi32(-1))) }
+    }
+
+    #[inline(always)]
+    fn bitandnot_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 {
+        unsafe { _mm_castsi128_ps(_mm_andnot_si128(_mm_castps_si128(a), _mm_castps_si128(b))) }
+    }
+}
+
+impl<C: HalfConv + Sync + Send + Copy + 'static> Simd for Sse2<C> {}
 
 #[cfg(test)]
 fn run(check: crate::backend::test_utils::Check) {
@@ -499,4 +760,4 @@ fn run(check: crate::backend::test_utils::Check) {
 }
 
 #[cfg(test)]
-crate::backend_tests!(Sse2, 4, 2);
+crate::backend_tests!(Sse2<HalfConvSoftware>, 4, 2);

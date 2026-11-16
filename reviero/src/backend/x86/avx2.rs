@@ -242,7 +242,6 @@ impl HalfConv for HalfConvF16c {
 
             upper = _mm256_or_si256(upper, _mm256_and_si256(is_nan, _mm256_set1_epi32(0x40)));
 
-            // Convert unsigned 16-bit values into the signed i16 range.
             let shifted = _mm256_sub_epi32(upper, _mm256_set1_epi32(0x8000));
 
             let packed = _mm_packs_epi32(_mm256_castsi256_si128(shifted), _mm256_extracti128_si256::<1>(shifted));
