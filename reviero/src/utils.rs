@@ -1,4 +1,5 @@
 use crate::traits::Simd;
+use half::{bf16, f16};
 use std::iter::ExactSizeIterator;
 
 macro_rules! define_as_simd {
@@ -20,3 +21,5 @@ macro_rules! define_as_simd {
 
 define_as_simd!(f32);
 define_as_simd!(f64);
+define_as_simd!(f16);
+define_as_simd!(bf16);
