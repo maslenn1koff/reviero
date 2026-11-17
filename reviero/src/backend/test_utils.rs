@@ -5,7 +5,8 @@
 //! `vectorize` wrapper, so the target features are enabled for the whole call.
 
 use crate::SimdFn;
-use crate::traits::{FloatSimd, Simd, SimdMask};
+use crate::traits::{FloatSimd, HalfSimd, Simd, SimdMask};
+use half::{bf16, f16};
 
 /// Generates the standard per-backend test module.
 ///
@@ -21,8 +22,13 @@ macro_rules! backend_tests {
 
             #[test]
             fn lanes() {
-                assert_eq!(<$backend as $crate::traits::FloatSimd>::f32_lanes, $f32_lanes);
-                assert_eq!(<$backend as $crate::traits::FloatSimd>::f64_lanes, $f64_lanes);
+                use $crate::traits::{FloatSimd, HalfSimd};
+
+                assert_eq!(<$backend as FloatSimd>::f32_lanes, $f32_lanes);
+                assert_eq!(<$backend as FloatSimd>::f64_lanes, $f64_lanes);
+                assert_eq!(<$backend as HalfSimd>::f16_lanes, $f32_lanes);
+                assert_eq!(<$backend as HalfSimd>::bf16_lanes, $f32_lanes);
+                assert_eq!(<$backend as HalfSimd>::m16_lanes, $f32_lanes);
             }
 
             #[test]
@@ -49,6 +55,36 @@ macro_rules! backend_tests {
             fn reduce_ops() {
                 super::run($crate::backend::test_utils::Check::Reduce);
             }
+
+            #[test]
+            fn half_io() {
+                super::run($crate::backend::test_utils::Check::HalfIo);
+            }
+
+            #[test]
+            fn half_convert() {
+                super::run($crate::backend::test_utils::Check::HalfConvert);
+            }
+
+            #[test]
+            fn half_float_ops() {
+                super::run($crate::backend::test_utils::Check::HalfFloat);
+            }
+
+            #[test]
+            fn half_mask_ops() {
+                super::run($crate::backend::test_utils::Check::HalfMask);
+            }
+
+            #[test]
+            fn half_bit_ops() {
+                super::run($crate::backend::test_utils::Check::HalfBits);
+            }
+
+            #[test]
+            fn half_reduce_ops() {
+                super::run($crate::backend::test_utils::Check::HalfReduce);
+            }
         }
     };
 }
@@ -61,6 +97,12 @@ pub enum Check {
     Mask,
     Bits,
     Reduce,
+    HalfIo,
+    HalfConvert,
+    HalfFloat,
+    HalfMask,
+    HalfBits,
+    HalfReduce,
 }
 
 /// Adapter that lets a [`Check`] be executed through any backend.
@@ -91,6 +133,30 @@ impl SimdFn for Run {
             Check::Reduce => {
                 check_reduce_f32(simd);
                 check_reduce_f64(simd);
+            }
+            Check::HalfIo => {
+                check_io_f16(simd);
+                check_io_bf16(simd);
+            }
+            Check::HalfConvert => {
+                check_convert_f16(simd);
+                check_convert_bf16(simd);
+            }
+            Check::HalfFloat => {
+                check_float_f16(simd);
+                check_float_bf16(simd);
+            }
+            Check::HalfMask => {
+                check_mask_f16(simd);
+                check_mask_bf16(simd);
+            }
+            Check::HalfBits => {
+                check_bits_f16(simd);
+                check_bits_bf16(simd);
+            }
+            Check::HalfReduce => {
+                check_reduce_f16(simd);
+                check_reduce_bf16(simd);
             }
         }
     }
@@ -500,6 +566,358 @@ fn check_reduce_f64<S: Simd>(simd: S) {
     assert_eq!(simd.reduce_min_f64(vector), values.iter().copied().fold(f64::INFINITY, f64::min), "reduce_min f64");
 }
 
+macro_rules! define_half_io_check {
+    ($name:ident, $ty:ident, $lanes:ident) => {
+        #[inline(always)]
+        fn $name<S: HalfSimd>(simd: S) {
+            let lanes = S::$lanes;
+            let src: Vec<$ty> = (0..lanes).map(|lane| <$ty>::from_f32(lane as f32 * 0.5 - 2.0)).collect();
+
+            paste::paste! {
+                let value = simd.[<load_ $ty>](&src);
+                let mut dst = vec![<$ty>::from_f32(f32::NAN); lanes];
+                simd.[<store_ $ty>](&mut dst, value);
+                assert_eq!(dst, src, concat!(stringify!($ty), " load/store"));
+
+                let value = simd.[<splat_ $ty>](<$ty>::from_f32(1.25));
+                simd.[<store_ $ty>](&mut dst, value);
+                assert!(
+                    dst.iter().all(|&value| value == <$ty>::from_f32(1.25)),
+                    concat!(stringify!($ty), " splat: {:?}"),
+                    dst
+                );
+            }
+        }
+    };
+}
+
+define_half_io_check!(check_io_f16, f16, f16_lanes);
+define_half_io_check!(check_io_bf16, bf16, bf16_lanes);
+
+macro_rules! define_half_convert_check {
+    ($name:ident, $ty:ident, $lanes:ident) => {
+        #[inline(always)]
+        fn $name<S: HalfSimd>(simd: S) {
+            let lanes = S::$lanes;
+            assert_eq!(S::f32_lanes, lanes, concat!(stringify!($ty), " and f32 lane count mismatch"));
+
+            let src: Vec<$ty> = (0..lanes).map(|lane| <$ty>::from_f32((lane as f32 - 3.5) * 0.25)).collect();
+            let raw: Vec<f32> = (0..lanes).map(|lane| 1.0 + (lane as f32 + 1.0) / 1024.0).collect();
+            let expected: Vec<$ty> = raw.iter().map(|&value| <$ty>::from_f32(value)).collect();
+
+            paste::paste! {
+                let vector = simd.[<load_ $ty>](&src);
+                let wide = simd.[<$ty _to_f32>](vector);
+
+                let mut out32 = vec![0.0f32; lanes];
+                simd.store_f32(&mut out32, wide);
+                for (lane, (&got, &want)) in out32.iter().zip(src.iter()).enumerate() {
+                    assert_eq!(got, want.to_f32(), concat!(stringify!($ty), "_to_f32 lane {}"), lane);
+                }
+
+                let mut out = vec![<$ty>::from_f32(0.0); lanes];
+                simd.[<store_ $ty>](&mut out, simd.[<f32_to_ $ty>](wide));
+                assert_eq!(out, src, concat!("f32_to_", stringify!($ty), " roundtrip"));
+
+                let raw = simd.load_f32(&raw);
+                simd.[<store_ $ty>](&mut out, simd.[<f32_to_ $ty>](raw));
+                for (lane, (got, want)) in out.iter().zip(expected.iter()).enumerate() {
+                    assert_eq!(got, want, concat!("f32_to_", stringify!($ty), " rounding lane {}"), lane);
+                }
+            }
+
+            let lane_mask = (1u32 << lanes) - 1;
+            let bits = 0b1010_0101 & lane_mask;
+            let mask = S::m16::from_bits(bits);
+            assert_eq!(mask.to_bits() & lane_mask, bits, concat!(stringify!($ty), " mask from_bits"));
+            let mask32 = simd.m16_to_m32(mask);
+            assert_eq!(mask32.to_bits() & ((1u32 << S::f32_lanes) - 1), bits, concat!(stringify!($ty), " m16_to_m32"));
+            assert_eq!(simd.m32_to_m16(mask32).to_bits() & lane_mask, bits, concat!(stringify!($ty), " m32_to_m16"));
+        }
+    };
+}
+
+define_half_convert_check!(check_convert_f16, f16, f16_lanes);
+define_half_convert_check!(check_convert_bf16, bf16, bf16_lanes);
+
+macro_rules! define_half_float_check {
+    ($name:ident, $ty:ident, $lanes:ident) => {
+        #[inline(always)]
+        fn $name<S: HalfSimd>(simd: S) {
+            let lanes = S::$lanes;
+            let a: Vec<$ty> = (0..lanes).map(|lane| <$ty>::from_f32((lane + 1) as f32)).collect();
+            let b: Vec<$ty> = vec![<$ty>::from_f32(2.0); lanes];
+            let c: Vec<$ty> = (0..lanes).map(|lane| <$ty>::from_f32(lane as f32 * 0.5)).collect();
+            let signed: Vec<$ty> = (0..lanes)
+                .map(|lane| if lane % 2 == 0 { a[lane] } else { <$ty>::from_f32(-a[lane].to_f32()) })
+                .collect();
+            let squares: Vec<$ty> = (0..lanes)
+                .map(|lane| {
+                    let root = (lane + 1) as f32;
+                    <$ty>::from_f32(root * root)
+                })
+                .collect();
+
+            paste::paste! {
+                let av = simd.[<load_ $ty>](&a);
+                let bv = simd.[<load_ $ty>](&b);
+                let cv = simd.[<load_ $ty>](&c);
+                let sv = simd.[<load_ $ty>](&signed);
+                let qv = simd.[<load_ $ty>](&squares);
+
+                let mut out = vec![<$ty>::from_f32(0.0); lanes];
+                macro_rules! check {
+                    ($label:literal, $value:expr, $expected:expr) => {{
+                        simd.[<store_ $ty>](&mut out, $value);
+                        let expected: Vec<$ty> = $expected;
+                        for (lane, (got, want)) in out.iter().zip(expected.iter()).enumerate() {
+                            assert_eq!(got, want, concat!($label, " ", stringify!($ty), " lane {}"), lane);
+                        }
+                    }};
+                }
+
+                check!(
+                    "add",
+                    simd.[<add_ $ty>](av, bv),
+                    a.iter().map(|value| <$ty>::from_f32(value.to_f32() + 2.0)).collect::<Vec<_>>()
+                );
+                check!(
+                    "sub",
+                    simd.[<sub_ $ty>](av, bv),
+                    a.iter().map(|value| <$ty>::from_f32(value.to_f32() - 2.0)).collect::<Vec<_>>()
+                );
+                check!(
+                    "mul",
+                    simd.[<mul_ $ty>](av, bv),
+                    a.iter().map(|value| <$ty>::from_f32(value.to_f32() * 2.0)).collect::<Vec<_>>()
+                );
+                check!(
+                    "div",
+                    simd.[<div_ $ty>](av, bv),
+                    a.iter().map(|value| <$ty>::from_f32(value.to_f32() / 2.0)).collect::<Vec<_>>()
+                );
+                check!(
+                    "min",
+                    simd.[<min_ $ty>](av, bv),
+                    a.iter().map(|value| <$ty>::from_f32(value.to_f32().min(2.0))).collect::<Vec<_>>()
+                );
+                check!(
+                    "max",
+                    simd.[<max_ $ty>](av, bv),
+                    a.iter().map(|value| <$ty>::from_f32(value.to_f32().max(2.0))).collect::<Vec<_>>()
+                );
+                check!(
+                    "abs",
+                    simd.[<abs_ $ty>](sv),
+                    signed.iter().map(|value| <$ty>::from_f32(value.to_f32().abs())).collect::<Vec<_>>()
+                );
+                check!(
+                    "neg",
+                    simd.[<neg_ $ty>](sv),
+                    signed.iter().map(|value| <$ty>::from_f32(-value.to_f32())).collect::<Vec<_>>()
+                );
+                check!(
+                    "sqrt",
+                    simd.[<sqrt_ $ty>](qv),
+                    (1..=lanes).map(|value| <$ty>::from_f32(value as f32)).collect::<Vec<_>>()
+                );
+                check!(
+                    "mul_add",
+                    simd.[<mul_add_ $ty>](av, bv, cv),
+                    (0..lanes).map(|lane| <$ty>::from_f32(a[lane].to_f32() * 2.0 + c[lane].to_f32())).collect::<Vec<_>>()
+                );
+                check!(
+                    "mul_sub",
+                    simd.[<mul_sub_ $ty>](av, bv, cv),
+                    (0..lanes).map(|lane| <$ty>::from_f32(a[lane].to_f32() * 2.0 - c[lane].to_f32())).collect::<Vec<_>>()
+                );
+                check!(
+                    "nmul_add",
+                    simd.[<nmul_add_ $ty>](av, bv, cv),
+                    (0..lanes).map(|lane| <$ty>::from_f32(-(a[lane].to_f32() * 2.0) + c[lane].to_f32())).collect::<Vec<_>>()
+                );
+                check!(
+                    "nmul_sub",
+                    simd.[<nmul_sub_ $ty>](av, bv, cv),
+                    (0..lanes).map(|lane| <$ty>::from_f32(-(a[lane].to_f32() * 2.0) - c[lane].to_f32())).collect::<Vec<_>>()
+                );
+            }
+        }
+    };
+}
+
+define_half_float_check!(check_float_f16, f16, f16_lanes);
+define_half_float_check!(check_float_bf16, bf16, bf16_lanes);
+
+macro_rules! define_half_mask_check {
+    ($name:ident, $ty:ident, $lanes:ident) => {
+        #[inline(always)]
+        fn $name<S: HalfSimd>(simd: S) {
+            let lanes = S::$lanes;
+            let a: Vec<$ty> = (0..lanes).map(|lane| <$ty>::from_f32(lane as f32)).collect();
+            let b: Vec<$ty> = (0..lanes).map(|lane| <$ty>::from_f32((lanes - 1 - lane) as f32)).collect();
+
+            paste::paste! {
+                let av = simd.[<load_ $ty>](&a);
+                let bv = simd.[<load_ $ty>](&b);
+                let one = simd.[<splat_ $ty>](<$ty>::from_f32(1.0));
+                let zero = simd.[<splat_ $ty>](<$ty>::from_f32(0.0));
+
+                let mut out = vec![<$ty>::from_f32(0.0); lanes];
+                macro_rules! check {
+                    ($label:literal, $mask:expr, $cmp:expr) => {{
+                        let selected = simd.[<select_ $ty>]($mask, one, zero);
+                        simd.[<store_ $ty>](&mut out, selected);
+                        for lane in 0..lanes {
+                            let want = if $cmp(a[lane].to_f32(), b[lane].to_f32()) {
+                                <$ty>::from_f32(1.0)
+                            } else {
+                                <$ty>::from_f32(0.0)
+                            };
+                            assert_eq!(out[lane], want, concat!($label, " ", stringify!($ty), " lane {}"), lane);
+                        }
+                    }};
+                }
+
+                check!("eq", simd.[<eq_ $ty>](av, bv), |x, y| x == y);
+                check!("ne", simd.[<ne_ $ty>](av, bv), |x, y| x != y);
+                check!("lt", simd.[<lt_ $ty>](av, bv), |x, y| x < y);
+                check!("le", simd.[<le_ $ty>](av, bv), |x, y| x <= y);
+                check!("gt", simd.[<gt_ $ty>](av, bv), |x, y| x > y);
+                check!("ge", simd.[<ge_ $ty>](av, bv), |x, y| x >= y);
+
+                let all = simd.[<eq_ $ty>](av, av);
+                let none = simd.[<lt_ $ty>](av, av);
+                assert!(all.all(), concat!(stringify!($ty), " mask all"));
+                assert!(all.any(), concat!(stringify!($ty), " mask any"));
+                assert!(!none.any(), concat!(stringify!($ty), " empty mask any"));
+                assert!(!none.all(), concat!(stringify!($ty), " empty mask all"));
+                assert!(all.and(all).all(), concat!(stringify!($ty), " mask and"));
+                assert!(!all.and(none).any(), concat!(stringify!($ty), " mask and empty"));
+                assert!(none.or(all).all(), concat!(stringify!($ty), " mask or"));
+                assert!(none.not().all(), concat!(stringify!($ty), " mask not"));
+                assert!(!all.not().any(), concat!(stringify!($ty), " mask not all"));
+
+                let mask_bits = (1u32 << lanes) - 1;
+                assert_eq!(S::m16::splat(true).to_bits() & mask_bits, mask_bits, concat!(stringify!($ty), " splat mask bits"));
+                assert_eq!(S::m16::splat(false).to_bits() & mask_bits, 0, concat!(stringify!($ty), " empty splat mask bits"));
+                let bits = 0b1010_0101 & mask_bits;
+                assert_eq!(S::m16::from_bits(bits).to_bits() & mask_bits, bits, concat!(stringify!($ty), " mask bit roundtrip"));
+
+                if lanes >= 2 {
+                    let left: Vec<$ty> = (0..lanes).map(|lane| <$ty>::from_f32(lane as f32)).collect();
+                    let right: Vec<$ty> = (0..lanes).map(|lane| <$ty>::from_f32((lane + lane % 2) as f32)).collect();
+                    let lv = simd.[<load_ $ty>](&left);
+                    let rv = simd.[<load_ $ty>](&right);
+                    let mixed = simd.[<eq_ $ty>](lv, rv);
+
+                    assert!(mixed.any(), concat!(stringify!($ty), " mixed mask any"));
+                    assert!(!mixed.all(), concat!(stringify!($ty), " mixed mask all"));
+
+                    simd.[<store_ $ty>](&mut out, simd.[<select_ $ty>](mixed, one, zero));
+                    for (lane, &value) in out.iter().enumerate() {
+                        let want = if lane % 2 == 0 { <$ty>::from_f32(1.0) } else { <$ty>::from_f32(0.0) };
+                        assert_eq!(value, want, concat!(stringify!($ty), " mixed select lane {}"), lane);
+                    }
+
+                    let full = simd.[<eq_ $ty>](lv, lv);
+                    assert!(!mixed.and(full).all(), concat!(stringify!($ty), " mixed and all"));
+                    assert!(mixed.or(full).all(), concat!(stringify!($ty), " mixed or all"));
+                    assert!(mixed.not().any(), concat!(stringify!($ty), " mixed not any"));
+                    assert!(!mixed.and(full.not()).any(), concat!(stringify!($ty), " mixed and empty"));
+                }
+            }
+        }
+    };
+}
+
+define_half_mask_check!(check_mask_f16, f16, f16_lanes);
+define_half_mask_check!(check_mask_bf16, bf16, bf16_lanes);
+
+// Half bitwise operations act on the backend's internal representation (the
+// packed half format for native backends, or a widened `f32` for software
+// ones), so the raw bit patterns are backend-specific. Test algebraic
+// identities that must hold for every representation instead.
+macro_rules! define_half_bits_check {
+    ($name:ident, $ty:ident, $lanes:ident) => {
+        #[inline(always)]
+        fn $name<S: HalfSimd>(simd: S) {
+            let lanes = S::$lanes;
+            let a: Vec<$ty> = (0..lanes).map(|lane| <$ty>::from_f32(1.0 + (lane % 8) as f32 * 0.125)).collect();
+            let b: Vec<$ty> = (0..lanes).map(|lane| <$ty>::from_f32(0.5 + (lane % 8) as f32 * 0.0625)).collect();
+            let zero = vec![<$ty>::from_f32(0.0); lanes];
+
+            paste::paste! {
+                let av = simd.[<load_ $ty>](&a);
+                let bv = simd.[<load_ $ty>](&b);
+                let zv = simd.[<load_ $ty>](&zero);
+
+                let mut out = vec![<$ty>::from_f32(0.0); lanes];
+                macro_rules! check {
+                    ($label:literal, $value:expr, $expected:expr) => {{
+                        simd.[<store_ $ty>](&mut out, $value);
+                        let expected: &[$ty] = $expected;
+                        assert_eq!(out.as_slice(), expected, concat!($label, " ", stringify!($ty)));
+                    }};
+                }
+
+                check!("bitand self", simd.[<bitand_ $ty>](av, av), &a);
+                check!("bitor self", simd.[<bitor_ $ty>](av, av), &a);
+                check!("bitxor self", simd.[<bitxor_ $ty>](av, av), &zero);
+                check!("bitandnot self", simd.[<bitandnot_ $ty>](av, av), &zero);
+                check!("bitnot twice", simd.[<bitnot_ $ty>](simd.[<bitnot_ $ty>](av)), &a);
+                check!("bitand zero", simd.[<bitand_ $ty>](av, zv), &zero);
+                check!("bitor zero", simd.[<bitor_ $ty>](av, zv), &a);
+                check!("bitxor zero", simd.[<bitxor_ $ty>](av, zv), &a);
+                check!("bitandnot zero lhs", simd.[<bitandnot_ $ty>](zv, av), &a);
+                check!("bitandnot zero rhs", simd.[<bitandnot_ $ty>](av, zv), &zero);
+
+                let mut lhs = vec![<$ty>::from_f32(0.0); lanes];
+                let mut rhs = vec![<$ty>::from_f32(0.0); lanes];
+
+                simd.[<store_ $ty>](&mut lhs, simd.[<bitand_ $ty>](av, bv));
+                simd.[<store_ $ty>](&mut rhs, simd.[<bitand_ $ty>](bv, av));
+                assert_eq!(lhs, rhs, concat!("bitand ", stringify!($ty), " commutative"));
+
+                simd.[<store_ $ty>](&mut lhs, simd.[<bitor_ $ty>](av, bv));
+                simd.[<store_ $ty>](&mut rhs, simd.[<bitor_ $ty>](bv, av));
+                assert_eq!(lhs, rhs, concat!("bitor ", stringify!($ty), " commutative"));
+
+                simd.[<store_ $ty>](&mut lhs, simd.[<bitxor_ $ty>](av, bv));
+                simd.[<store_ $ty>](&mut rhs, simd.[<bitxor_ $ty>](bv, av));
+                assert_eq!(lhs, rhs, concat!("bitxor ", stringify!($ty), " commutative"));
+            }
+        }
+    };
+}
+
+define_half_bits_check!(check_bits_f16, f16, f16_lanes);
+define_half_bits_check!(check_bits_bf16, bf16, bf16_lanes);
+
+macro_rules! define_half_reduce_check {
+    ($name:ident, $ty:ident, $lanes:ident) => {
+        #[inline(always)]
+        fn $name<S: HalfSimd>(simd: S) {
+            let lanes = S::$lanes;
+            let values: Vec<$ty> = (0..lanes).map(|lane| <$ty>::from_f32(lane as f32 - 2.0)).collect();
+
+            paste::paste! {
+                let vector = simd.[<load_ $ty>](&values);
+                let sum: f32 = values.iter().map(|value| value.to_f32()).sum();
+                let max = values.iter().map(|value| value.to_f32()).fold(f32::NEG_INFINITY, f32::max);
+                let min = values.iter().map(|value| value.to_f32()).fold(f32::INFINITY, f32::min);
+
+                assert_eq!(simd.[<reduce_sum_ $ty>](vector), <$ty>::from_f32(sum), concat!("reduce_sum ", stringify!($ty)));
+                assert_eq!(simd.[<reduce_max_ $ty>](vector), <$ty>::from_f32(max), concat!("reduce_max ", stringify!($ty)));
+                assert_eq!(simd.[<reduce_min_ $ty>](vector), <$ty>::from_f32(min), concat!("reduce_min ", stringify!($ty)));
+            }
+        }
+    };
+}
+
+define_half_reduce_check!(check_reduce_f16, f16, f16_lanes);
+define_half_reduce_check!(check_reduce_bf16, bf16, bf16_lanes);
+
 pub const SUITE_N: usize = 64;
 
 fn suite_a_f32() -> Vec<f32> {
@@ -596,11 +1014,32 @@ pub struct SuiteF64 {
     pub min: f64,
 }
 
-/// Combined results for both scalar widths.
+/// Results of the generic f16 or bf16 suite.
+///
+/// Values are widened to `f32` after being stored, so backends with different
+/// internal representations can be compared with a single tolerance.
+#[derive(Clone, Debug)]
+pub struct SuiteHalfType {
+    pub floats: Vec<Vec<f32>>,
+    pub masks: Vec<Vec<u8>>,
+    pub sum: f32,
+    pub max: f32,
+    pub min: f32,
+}
+
+/// Results of the half-precision suites.
+#[derive(Clone, Debug)]
+pub struct SuiteHalf {
+    pub f16: SuiteHalfType,
+    pub bf16: SuiteHalfType,
+}
+
+/// Combined results for all scalar widths.
 #[derive(Clone, Debug)]
 pub struct Suite {
     pub single: SuiteF32,
     pub double: SuiteF64,
+    pub half: SuiteHalf,
 }
 
 /// Executes the full generic suite on a single backend.
@@ -614,9 +1053,101 @@ impl SimdFn for SuiteOp {
         Suite {
             single: suite_f32(simd),
             double: suite_f64(simd),
+            half: SuiteHalf {
+                f16: suite_f16(simd),
+                bf16: suite_bf16(simd),
+            },
         }
     }
 }
+
+macro_rules! define_half_suite {
+    ($name:ident, $ty:ident, $lanes:ident) => {
+        #[inline(always)]
+        pub fn $name<S: HalfSimd>(simd: S) -> SuiteHalfType {
+            paste::paste! {
+            let lanes = S::$lanes;
+            assert_eq!(SUITE_N % lanes, 0, concat!("suite length must be divisible by ", stringify!($ty), " lane count"));
+
+            let a: Vec<$ty> = suite_a_f32().into_iter().map(<$ty>::from_f32).collect();
+            let b: Vec<$ty> = suite_b_f32().into_iter().map(<$ty>::from_f32).collect();
+            let c: Vec<$ty> = suite_c_f32().into_iter().map(<$ty>::from_f32).collect();
+            let sqrt_input: Vec<$ty> = suite_sqrt_f32().into_iter().map(<$ty>::from_f32).collect();
+            let reduce_input: Vec<$ty> = suite_reduce_f32().into_iter().map(<$ty>::from_f32).collect();
+
+            let one = simd.[<splat_ $ty>](<$ty>::from_f32(1.0));
+            let zero = simd.[<splat_ $ty>](<$ty>::from_f32(0.0));
+
+            let mut floats: Vec<Vec<f32>> = (0..13).map(|_| Vec::with_capacity(SUITE_N)).collect();
+            let mut masks: Vec<Vec<u8>> = (0..6).map(|_| Vec::with_capacity(SUITE_N)).collect();
+            let mut buffer = vec![<$ty>::from_f32(0.0); lanes];
+
+            let mut sum = 0.0f32;
+            let mut max = f32::NEG_INFINITY;
+            let mut min = f32::INFINITY;
+
+            macro_rules! emit_float {
+                ($group:expr, $value:expr) => {{
+                    simd.[<store_ $ty>](&mut buffer, $value);
+                    floats[$group].extend(buffer.iter().map(|value| value.to_f32()));
+                }};
+            }
+
+            macro_rules! emit_mask {
+                ($group:expr, $value:expr) => {{
+                    simd.[<store_ $ty>](&mut buffer, $value);
+                    masks[$group].extend(buffer.iter().map(|value| u8::from(*value != <$ty>::from_f32(0.0))));
+                }};
+            }
+
+            for start in (0..SUITE_N).step_by(lanes) {
+                let end = start + lanes;
+                let av = simd.[<load_ $ty>](&a[start..end]);
+                let bv = simd.[<load_ $ty>](&b[start..end]);
+                let cv = simd.[<load_ $ty>](&c[start..end]);
+                let qv = simd.[<load_ $ty>](&sqrt_input[start..end]);
+                let rv = simd.[<load_ $ty>](&reduce_input[start..end]);
+
+                emit_float!(0, simd.[<add_ $ty>](av, bv));
+                emit_float!(1, simd.[<sub_ $ty>](av, bv));
+                emit_float!(2, simd.[<mul_ $ty>](av, bv));
+                emit_float!(3, simd.[<div_ $ty>](av, bv));
+                emit_float!(4, simd.[<min_ $ty>](av, bv));
+                emit_float!(5, simd.[<max_ $ty>](av, bv));
+                emit_float!(6, simd.[<abs_ $ty>](av));
+                emit_float!(7, simd.[<neg_ $ty>](av));
+                emit_float!(8, simd.[<sqrt_ $ty>](qv));
+                emit_float!(9, simd.[<mul_add_ $ty>](av, bv, cv));
+                emit_float!(10, simd.[<mul_sub_ $ty>](av, bv, cv));
+                emit_float!(11, simd.[<nmul_add_ $ty>](av, bv, cv));
+                emit_float!(12, simd.[<nmul_sub_ $ty>](av, bv, cv));
+
+                emit_mask!(0, simd.[<select_ $ty>](simd.[<eq_ $ty>](av, bv), one, zero));
+                emit_mask!(1, simd.[<select_ $ty>](simd.[<ne_ $ty>](av, bv), one, zero));
+                emit_mask!(2, simd.[<select_ $ty>](simd.[<lt_ $ty>](av, bv), one, zero));
+                emit_mask!(3, simd.[<select_ $ty>](simd.[<le_ $ty>](av, bv), one, zero));
+                emit_mask!(4, simd.[<select_ $ty>](simd.[<gt_ $ty>](av, bv), one, zero));
+                emit_mask!(5, simd.[<select_ $ty>](simd.[<ge_ $ty>](av, bv), one, zero));
+
+                sum += simd.[<reduce_sum_ $ty>](rv).to_f32();
+                max = max.max(simd.[<reduce_max_ $ty>](rv).to_f32());
+                min = min.min(simd.[<reduce_min_ $ty>](rv).to_f32());
+            }
+
+            SuiteHalfType {
+                floats,
+                masks,
+                sum,
+                max,
+                min,
+            }
+            }
+        }
+    };
+}
+
+define_half_suite!(suite_f16, f16, f16_lanes);
+define_half_suite!(suite_bf16, bf16, bf16_lanes);
 
 #[inline(always)]
 pub fn suite_f32<S: Simd>(simd: S) -> SuiteF32 {

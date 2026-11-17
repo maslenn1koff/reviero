@@ -757,6 +757,10 @@ fn run(check: crate::backend::test_utils::Check) {
     }
 
     unsafe { vectorize(crate::backend::test_utils::Run(check)) };
+
+    if std::arch::is_x86_feature_detected!("f16c") {
+        unsafe { vectorize_f16c(crate::backend::test_utils::Run(check)) };
+    }
 }
 
 #[cfg(test)]
