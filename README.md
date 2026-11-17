@@ -13,7 +13,7 @@ Add `reviero` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-reviero = "0.1"
+reviero = "0.2"
 ```
 
 ## Usage
