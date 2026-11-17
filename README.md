@@ -65,22 +65,18 @@ fn main() {
 
 ## Benchmarks
 
-Criterion dot-product benchmarks on an Intel Core i5-12600H. Each chart compares `reviero`, `pulp`, `wide`, and `scalar` across `f32` and `f64` inputs, from 513 to 1,048,576 elements.
+Criterion dot-product benchmarks on an Intel Core i5-12600H. Each chart compares `reviero`, `pulp`, `wide`, and `scalar` for `f32` and `f64` inputs, from 513 to 1,048,576 elements. Higher throughput is better; values are in billions of elements per second (Gelem/s).
 
-### Throughput
+### Native target
 
-Higher is better. Throughput is shown in billions of elements per second (Gelem/s).
+Built with `RUSTFLAGS="-C target-cpu=native"`.
 
-| With `target-cpu=native` | Without `target-cpu=native` |
-|:--:|:--:|
-| ![Dot-product throughput with target-cpu=native](assets/dot-product-benchmarks.svg) | ![Dot-product throughput without target-cpu=native](assets/dot-product-benchmarks-no-native.svg) |
+![Dot-product throughput, native target](https://github.com/maslenn1koff/reviero/raw/main/assets/dot-product-benchmarks.svg)
 
-### Execution time
+### Default target
 
-Lower is better. Median execution time is shown in microseconds on a logarithmic scale.
+Built without the `target-cpu` flag.
 
-| With `target-cpu=native` | Without `target-cpu=native` |
-|:--:|:--:|
-| ![Dot-product execution time with target-cpu=native](assets/dot-product-latency.svg) | ![Dot-product execution time without target-cpu=native](assets/dot-product-latency-no-native.svg) |
+![Dot-product throughput, default target](https://github.com/maslenn1koff/reviero/raw/main/assets/dot-product-benchmarks-no-native.svg)
 
-The native run uses `RUSTFLAGS="-C target-cpu=native"`; the default-target run does not set `target-cpu`. See the raw Criterion output for the [native run](assets/raw_bench.i5-12600h.txt) and the [default-target run](assets/raw_bench_no_native.i5-12600h.txt).
+See the raw Criterion output for the [native run](https://github.com/maslenn1koff/reviero/blob/main/assets/raw_bench_native.txt) and the [default-target run](https://github.com/maslenn1koff/reviero/blob/main/assets/raw_bench.txt).

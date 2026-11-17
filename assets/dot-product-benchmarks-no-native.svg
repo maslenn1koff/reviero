@@ -6,7 +6,7 @@
           .axis { stroke: #111; stroke-width: 1.25; }
         </style>
         <rect width="1600" height="900" fill="#fff"/>
-<text x="96" y="58" font-size="13" font-weight="650" letter-spacing="2" class="muted">CRITERION BENCHMARK · INTEL CORE i5-12600H · WITHOUT TARGET-CPU=NATIVE</text>
+<text x="96" y="58" font-size="13" font-weight="650" letter-spacing="2" class="muted">CRITERION BENCHMARK · INTEL CORE i5-12600H · DEFAULT TARGET</text>
 <text x="96" y="112" font-size="38" font-weight="700" letter-spacing="-1.5">SIMD dot product</text>
 <text x="96" y="148" font-size="17" class="muted">Throughput by input vector length · higher is better</text>
 <text x="164" y="220" font-size="21" font-weight="700">f32</text>
@@ -32,30 +32,30 @@
 <line x1="164" y1="675" x2="762" y2="675" class="axis"/>
 <text x="463.0" y="732" font-size="14" text-anchor="middle" class="muted">Vector length (elements)</text>
 <text x="111" y="472.5" font-size="14" text-anchor="middle" class="muted" transform="rotate(-90 111 472.5)">Throughput (Gelem/s)</text>
-<path d="M 164.00 332.91 L 218.45 334.66 L 327.04 302.87 L 397.06 388.23 L 762.00 560.10" fill="none" stroke="#2463EB" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle class="data-point" cx="164.00" cy="332.91" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="218.45" cy="334.66" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="327.04" cy="302.87" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="397.06" cy="388.23" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="762.00" cy="560.10" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
-<path d="M 164.00 407.27 L 218.45 423.89 L 327.04 393.01 L 397.06 400.50 L 762.00 579.05" fill="none" stroke="#E4572E" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle class="data-point" cx="164.00" cy="407.27" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="218.45" cy="423.89" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="327.04" cy="393.01" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="397.06" cy="400.50" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="762.00" cy="579.05" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
-<path d="M 164.00 462.67 L 218.45 456.11 L 327.04 448.42 L 397.06 499.90 L 762.00 577.01" fill="none" stroke="#8B5CF6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle class="data-point" cx="164.00" cy="462.67" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="218.45" cy="456.11" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="327.04" cy="448.42" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="397.06" cy="499.90" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="762.00" cy="577.01" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
-<path d="M 164.00 641.64 L 218.45 643.63 L 327.04 645.41 L 397.06 645.85 L 762.00 645.76" fill="none" stroke="#159D78" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle class="data-point" cx="164.00" cy="641.64" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="218.45" cy="643.63" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="327.04" cy="645.41" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="397.06" cy="645.85" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="762.00" cy="645.76" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<path d="M 164.00 322.85 L 218.45 274.93 L 327.04 309.33 L 397.06 434.74 L 762.00 528.51" fill="none" stroke="#2463EB" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="data-point" cx="164.00" cy="322.85" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="218.45" cy="274.93" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="327.04" cy="309.33" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="397.06" cy="434.74" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="762.00" cy="528.51" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<path d="M 164.00 373.88 L 218.45 359.19 L 327.04 353.40 L 397.06 434.02 L 762.00 531.23" fill="none" stroke="#E4572E" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="data-point" cx="164.00" cy="373.88" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="218.45" cy="359.19" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="327.04" cy="353.40" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="397.06" cy="434.02" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="762.00" cy="531.23" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<path d="M 164.00 454.60 L 218.45 450.72 L 327.04 431.50 L 397.06 479.99 L 762.00 542.91" fill="none" stroke="#8B5CF6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="data-point" cx="164.00" cy="454.60" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="218.45" cy="450.72" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="327.04" cy="431.50" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="397.06" cy="479.99" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="762.00" cy="542.91" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<path d="M 164.00 633.15 L 218.45 632.56 L 327.04 630.74 L 397.06 628.90 L 762.00 628.34" fill="none" stroke="#159D78" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="data-point" cx="164.00" cy="633.15" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="218.45" cy="632.56" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="327.04" cy="630.74" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="397.06" cy="628.90" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="762.00" cy="628.34" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
 <text x="890" y="220" font-size="21" font-weight="700">f64</text>
 <line x1="890" y1="675.0" x2="1488" y2="675.0" class="grid"/>
 <text x="877" y="680.0" font-size="13" text-anchor="end" class="muted">0</text>
@@ -81,30 +81,30 @@
 <line x1="890" y1="675" x2="1488" y2="675" class="axis"/>
 <text x="1189.0" y="732" font-size="14" text-anchor="middle" class="muted">Vector length (elements)</text>
 <text x="837" y="472.5" font-size="14" text-anchor="middle" class="muted" transform="rotate(-90 837 472.5)">Throughput (Gelem/s)</text>
-<path d="M 890.00 413.01 L 944.45 424.45 L 1053.04 475.09 L 1123.06 470.13 L 1488.00 626.86" fill="none" stroke="#2463EB" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle class="data-point" cx="890.00" cy="413.01" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="944.45" cy="424.45" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="1053.04" cy="475.09" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="1123.06" cy="470.13" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="1488.00" cy="626.86" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
-<path d="M 890.00 479.48 L 944.45 476.49 L 1053.04 495.65 L 1123.06 507.50 L 1488.00 626.86" fill="none" stroke="#E4572E" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle class="data-point" cx="890.00" cy="479.48" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="944.45" cy="476.49" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="1053.04" cy="495.65" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="1123.06" cy="507.50" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="1488.00" cy="626.86" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
-<path d="M 890.00 531.75 L 944.45 519.56 L 1053.04 546.32 L 1123.06 552.47 L 1488.00 629.11" fill="none" stroke="#8B5CF6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle class="data-point" cx="890.00" cy="531.75" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="944.45" cy="519.56" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="1053.04" cy="546.32" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="1123.06" cy="552.47" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="1488.00" cy="629.11" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
-<path d="M 890.00 624.47 L 944.45 628.84 L 1053.04 631.10 L 1123.06 632.57 L 1488.00 639.44" fill="none" stroke="#159D78" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle class="data-point" cx="890.00" cy="624.47" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="944.45" cy="628.84" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="1053.04" cy="631.10" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="1123.06" cy="632.57" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
-<circle class="data-point" cx="1488.00" cy="639.44" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<path d="M 890.00 373.80 L 944.45 294.42 L 1053.04 454.44 L 1123.06 517.42 L 1488.00 590.12" fill="none" stroke="#2463EB" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="data-point" cx="890.00" cy="373.80" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="944.45" cy="294.42" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1053.04" cy="454.44" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1123.06" cy="517.42" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1488.00" cy="590.12" r="6" fill="#2463EB" stroke="#fff" stroke-width="2"/>
+<path d="M 890.00 441.84 L 944.45 439.07 L 1053.04 452.86 L 1123.06 517.09 L 1488.00 595.91" fill="none" stroke="#E4572E" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="data-point" cx="890.00" cy="441.84" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="944.45" cy="439.07" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1053.04" cy="452.86" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1123.06" cy="517.09" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1488.00" cy="595.91" r="6" fill="#E4572E" stroke="#fff" stroke-width="2"/>
+<path d="M 890.00 507.60 L 944.45 503.08 L 1053.04 532.53 L 1123.06 526.56 L 1488.00 606.12" fill="none" stroke="#8B5CF6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="data-point" cx="890.00" cy="507.60" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="944.45" cy="503.08" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1053.04" cy="532.53" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1123.06" cy="526.56" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1488.00" cy="606.12" r="6" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+<path d="M 890.00 611.50 L 944.45 608.05 L 1053.04 605.79 L 1123.06 604.83 L 1488.00 623.96" fill="none" stroke="#159D78" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="data-point" cx="890.00" cy="611.50" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="944.45" cy="608.05" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1053.04" cy="605.79" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1123.06" cy="604.83" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
+<circle class="data-point" cx="1488.00" cy="623.96" r="6" fill="#159D78" stroke="#fff" stroke-width="2"/>
 <line x1="520" y1="795" x2="545" y2="795" stroke="#2463EB" stroke-width="3.5"/>
 <circle cx="532.5" cy="795" r="5" fill="#2463EB" stroke="#fff" stroke-width="1.5"/>
 <text x="555" y="800" font-size="15" font-weight="550">reviero</text>

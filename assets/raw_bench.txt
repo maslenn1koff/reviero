@@ -1,0 +1,185 @@
+CPU: I5-12600H (AVX2 + FMA + F16C)
+
+dot_f32/reviero/513
+  time:  [19.586 ns 19.667 ns 19.757 ns]
+  thrpt: [25.965 Gelem/s 26.085 Gelem/s 26.192 Gelem/s]
+dot_f32/pulp/513
+  time:  [22.931 ns 22.999 ns 23.083 ns]
+  thrpt: [22.224 Gelem/s 22.305 Gelem/s 22.371 Gelem/s]
+dot_f32/wide/513
+  time:  [31.336 ns 31.422 ns 31.531 ns]
+  thrpt: [16.270 Gelem/s 16.326 Gelem/s 16.371 Gelem/s]
+dot_f32/scalar/513
+  time:  [163.72 ns 165.50 ns 167.09 ns]
+  thrpt: [3.0703 Gelem/s 3.0997 Gelem/s 3.1335 Gelem/s]
+dot_f32/reviero/1027
+  time:  [34.524 ns 34.654 ns 34.807 ns]
+  thrpt: [29.506 Gelem/s 29.635 Gelem/s 29.748 Gelem/s]
+dot_f32/pulp/1027
+  time:  [43.754 ns 43.901 ns 44.074 ns]
+  thrpt: [23.302 Gelem/s 23.393 Gelem/s 23.472 Gelem/s]
+dot_f32/wide/1027
+  time:  [61.577 ns 61.818 ns 62.174 ns]
+  thrpt: [16.518 Gelem/s 16.613 Gelem/s 16.678 Gelem/s]
+dot_f32/scalar/1027
+  time:  [324.45 ns 326.69 ns 328.89 ns]
+  thrpt: [3.1227 Gelem/s 3.1436 Gelem/s 3.1654 Gelem/s]
+dot_f32/reviero/4099
+  time:  [150.95 ns 151.33 ns 151.84 ns]
+  thrpt: [26.996 Gelem/s 27.087 Gelem/s 27.154 Gelem/s]
+dot_f32/pulp/4099
+  time:  [171.63 ns 172.07 ns 172.73 ns]
+  thrpt: [23.730 Gelem/s 23.822 Gelem/s 23.883 Gelem/s]
+dot_f32/wide/4099
+  time:  [226.52 ns 227.25 ns 228.02 ns]
+  thrpt: [17.977 Gelem/s 18.037 Gelem/s 18.096 Gelem/s]
+dot_f32/scalar/4099
+  time:  [1.2454 µs 1.2503 µs 1.2565 µs]
+  thrpt: [3.2624 Gelem/s 3.2784 Gelem/s 3.2913 Gelem/s]
+dot_f32/reviero/10007
+  time:  [560.85 ns 562.29 ns 564.27 ns]
+  thrpt: [17.735 Gelem/s 17.797 Gelem/s 17.842 Gelem/s]
+dot_f32/pulp/10007
+  time:  [559.06 ns 560.60 ns 562.51 ns]
+  thrpt: [17.790 Gelem/s 17.850 Gelem/s 17.900 Gelem/s]
+dot_f32/wide/10007
+  time:  [690.40 ns 692.74 ns 695.73 ns]
+  thrpt: [14.383 Gelem/s 14.445 Gelem/s 14.494 Gelem/s]
+dot_f32/scalar/10007
+  time:  [2.9154 µs 2.9303 µs 2.9465 µs]
+  thrpt: [3.3962 Gelem/s 3.4150 Gelem/s 3.4325 Gelem/s]
+dot_f32/reviero/1048576
+  time:  [96.117 µs 96.633 µs 97.338 µs]
+  thrpt: [10.772 Gelem/s 10.851 Gelem/s 10.909 Gelem/s]
+dot_f32/pulp/1048576
+  time:  [97.980 µs 98.458 µs 98.971 µs]
+  thrpt: [10.595 Gelem/s 10.650 Gelem/s 10.702 Gelem/s]
+dot_f32/wide/1048576
+  time:  [106.29 µs 107.17 µs 108.08 µs]
+  thrpt: [9.7016 Gelem/s 9.7842 Gelem/s 9.8657 Gelem/s]
+dot_f32/scalar/1048576
+  time:  [302.00 µs 303.37 µs 305.50 µs]
+  thrpt: [3.4323 Gelem/s 3.4564 Gelem/s 3.4721 Gelem/s]
+
+dot_f64/reviero/513
+  time:  [34.434 ns 34.489 ns 34.573 ns]
+  thrpt: [14.838 Gelem/s 14.874 Gelem/s 14.898 Gelem/s]
+dot_f64/pulp/513
+  time:  [44.464 ns 44.554 ns 44.678 ns]
+  thrpt: [11.482 Gelem/s 11.514 Gelem/s 11.537 Gelem/s]
+dot_f64/wide/513
+  time:  [61.955 ns 62.057 ns 62.159 ns]
+  thrpt: [8.2530 Gelem/s 8.2666 Gelem/s 8.2802 Gelem/s]
+dot_f64/scalar/513
+  time:  [163.13 ns 163.59 ns 164.06 ns]
+  thrpt: [3.1269 Gelem/s 3.1358 Gelem/s 3.1448 Gelem/s]
+dot_f64/reviero/1027
+  time:  [54.466 ns 54.645 ns 54.814 ns]
+  thrpt: [18.736 Gelem/s 18.794 Gelem/s 18.856 Gelem/s]
+dot_f64/pulp/1027
+  time:  [87.907 ns 88.145 ns 88.380 ns]
+  thrpt: [11.620 Gelem/s 11.651 Gelem/s 11.683 Gelem/s]
+dot_f64/wide/1027
+  time:  [120.55 ns 120.97 ns 121.49 ns]
+  thrpt: [8.4533 Gelem/s 8.4898 Gelem/s 8.5191 Gelem/s]
+dot_f64/scalar/1027
+  time:  [309.70 ns 310.64 ns 311.98 ns]
+  thrpt: [3.2919 Gelem/s 3.3061 Gelem/s 3.3161 Gelem/s]
+dot_f64/reviero/4099
+  time:  [375.50 ns 376.34 ns 377.70 ns]
+  thrpt: [10.853 Gelem/s 10.892 Gelem/s 10.916 Gelem/s]
+dot_f64/pulp/4099
+  time:  [372.94 ns 373.67 ns 374.52 ns]
+  thrpt: [10.945 Gelem/s 10.970 Gelem/s 10.991 Gelem/s]
+dot_f64/wide/4099
+  time:  [581.80 ns 582.60 ns 583.78 ns]
+  thrpt: [7.0215 Gelem/s 7.0357 Gelem/s 7.0453 Gelem/s]
+dot_f64/scalar/4099
+  time:  [1.1979 µs 1.1993 µs 1.2009 µs]
+  thrpt: [3.4133 Gelem/s 3.4179 Gelem/s 3.4218 Gelem/s]
+dot_f64/reviero/10007
+  time:  [1.2840 µs 1.2859 µs 1.2890 µs]
+  thrpt: [7.7631 Gelem/s 7.7819 Gelem/s 7.7938 Gelem/s]
+dot_f64/pulp/10007
+  time:  [1.2811 µs 1.2833 µs 1.2865 µs]
+  thrpt: [7.7782 Gelem/s 7.7981 Gelem/s 7.8114 Gelem/s]
+dot_f64/wide/10007
+  time:  [1.3627 µs 1.3652 µs 1.3687 µs]
+  thrpt: [7.3114 Gelem/s 7.3302 Gelem/s 7.3433 Gelem/s]
+dot_f64/scalar/10007
+  time:  [2.8821 µs 2.8879 µs 2.8953 µs]
+  thrpt: [3.4562 Gelem/s 3.4651 Gelem/s 3.4721 Gelem/s]
+dot_f64/reviero/1048576
+  time:  [242.91 µs 250.17 µs 260.77 µs]
+  thrpt: [4.0211 Gelem/s 4.1915 Gelem/s 4.3167 Gelem/s]
+dot_f64/pulp/1048576
+  time:  [258.62 µs 268.47 µs 278.65 µs]
+  thrpt: [3.7631 Gelem/s 3.9057 Gelem/s 4.0546 Gelem/s]
+dot_f64/wide/1048576
+  time:  [299.14 µs 308.26 µs 321.28 µs]
+  thrpt: [3.2637 Gelem/s 3.4016 Gelem/s 3.5053 Gelem/s]
+dot_f64/scalar/1048576
+  time:  [405.40 µs 416.05 µs 427.54 µs]
+  thrpt: [2.4526 Gelem/s 2.5203 Gelem/s 2.5865 Gelem/s]
+
+dot_f16/reviero/513
+  time:  [34.576 ns 34.636 ns 34.720 ns]
+  thrpt: [14.775 Gelem/s 14.811 Gelem/s 14.837 Gelem/s]
+dot_f16/scalar/513
+  time:  [4.3092 µs 4.3204 µs 4.3346 µs]
+  thrpt: [118.35 Melem/s 118.74 Melem/s 119.05 Melem/s]
+dot_f16/reviero/1027
+  time:  [66.271 ns 66.414 ns 66.593 ns]
+  thrpt: [15.422 Gelem/s 15.464 Gelem/s 15.497 Gelem/s]
+dot_f16/scalar/1027
+  time:  [8.5790 µs 8.6096 µs 8.6396 µs]
+  thrpt: [118.87 Melem/s 119.29 Melem/s 119.71 Melem/s]
+dot_f16/reviero/4099
+  time:  [198.54 ns 198.95 ns 199.60 ns]
+  thrpt: [20.536 Gelem/s 20.603 Gelem/s 20.646 Gelem/s]
+dot_f16/scalar/4099
+  time:  [34.155 µs 34.297 µs 34.435 µs]
+  thrpt: [119.04 Melem/s 119.51 Melem/s 120.01 Melem/s]
+dot_f16/reviero/10007
+  time:  [494.59 ns 495.65 ns 497.03 ns]
+  thrpt: [20.134 Gelem/s 20.190 Gelem/s 20.233 Gelem/s]
+dot_f16/scalar/10007
+  time:  [82.828 µs 83.129 µs 83.582 µs]
+  thrpt: [119.73 Melem/s 120.38 Melem/s 120.82 Melem/s]
+dot_f16/reviero/1048576
+  time:  [53.478 µs 53.803 µs 54.180 µs]
+  thrpt: [19.354 Gelem/s 19.489 Gelem/s 19.608 Gelem/s]
+dot_f16/scalar/1048576
+  time:  [8.6522 ms 8.6906 ms 8.7324 ms]
+  thrpt: [120.08 Melem/s 120.66 Melem/s 121.19 Melem/s]
+
+dot_bf16/reviero/513
+  time:  [38.268 ns 38.392 ns 38.549 ns]
+  thrpt: [13.308 Gelem/s 13.362 Gelem/s 13.405 Gelem/s]
+dot_bf16/scalar/513
+  time:  [1.6583 µs 1.6624 µs 1.6686 µs]
+  thrpt: [307.45 Melem/s 308.60 Melem/s 309.35 Melem/s]
+dot_bf16/reviero/1027
+  time:  [75.793 ns 75.978 ns 76.182 ns]
+  thrpt: [13.481 Gelem/s 13.517 Gelem/s 13.550 Gelem/s]
+dot_bf16/scalar/1027
+  time:  [3.3016 µs 3.3093 µs 3.3198 µs]
+  thrpt: [309.36 Melem/s 310.33 Melem/s 311.06 Melem/s]
+dot_bf16/reviero/4099
+  time:  [252.78 ns 253.44 ns 254.15 ns]
+  thrpt: [16.128 Gelem/s 16.173 Gelem/s 16.216 Gelem/s]
+dot_bf16/scalar/4099
+  time:  [13.126 µs 13.150 µs 13.186 µs]
+  thrpt: [310.86 Melem/s 311.71 Melem/s 312.28 Melem/s]
+dot_bf16/reviero/10007
+  time:  [603.73 ns 605.28 ns 607.01 ns]
+  thrpt: [16.486 Gelem/s 16.533 Gelem/s 16.575 Gelem/s]
+dot_bf16/scalar/10007
+  time:  [32.079 µs 32.119 µs 32.176 µs]
+  thrpt: [311.01 Melem/s 311.56 Melem/s 311.95 Melem/s]
+dot_bf16/reviero/1048576
+  time:  [64.274 µs 64.555 µs 64.790 µs]
+  thrpt: [16.184 Gelem/s 16.243 Gelem/s 16.314 Gelem/s]
+dot_bf16/scalar/1048576
+  time:  [3.3751 ms 3.3800 ms 3.3872 ms]
+  thrpt: [309.57 Melem/s 310.23 Melem/s 310.68 Melem/s]
