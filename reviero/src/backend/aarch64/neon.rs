@@ -111,63 +111,6 @@ impl SimdMask for NeonMaskF64 {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct NeonMaskF16(uint16x8_t); // 8 lanes
-
-impl SimdMask for NeonMaskF16 {
-    #[inline(always)]
-    fn splat(v: bool) -> Self {
-        Self(unsafe { vdupq_n_u16(if v { u16::MAX } else { 0 }) })
-    }
-
-    #[inline(always)]
-    fn from_bits(v: u32) -> Self {
-        let lanes = [
-            if v & 1 != 0 { u16::MAX } else { 0 },
-            if v & 2 != 0 { u16::MAX } else { 0 },
-            if v & 4 != 0 { u16::MAX } else { 0 },
-            if v & 8 != 0 { u16::MAX } else { 0 },
-            if v & 16 != 0 { u16::MAX } else { 0 },
-            if v & 32 != 0 { u16::MAX } else { 0 },
-            if v & 64 != 0 { u16::MAX } else { 0 },
-            if v & 128 != 0 { u16::MAX } else { 0 },
-        ];
-        Self(unsafe { vld1q_u16(lanes.as_ptr()) })
-    }
-
-    #[inline(always)]
-    fn to_bits(self) -> u32 {
-        let mut lanes = [0; 8];
-        unsafe { vst1q_u16(lanes.as_mut_ptr(), self.0) };
-        lanes.iter().enumerate().fold(0, |bits, (i, &lane)| bits | (u32::from(lane != 0) << i))
-    }
-
-    #[inline(always)]
-    fn and(self, other: Self) -> Self {
-        Self(unsafe { vandq_u16(self.0, other.0) })
-    }
-
-    #[inline(always)]
-    fn or(self, other: Self) -> Self {
-        Self(unsafe { vorrq_u16(self.0, other.0) })
-    }
-
-    #[inline(always)]
-    fn not(self) -> Self {
-        Self(unsafe { vmvnq_u16(self.0) })
-    }
-
-    #[inline(always)]
-    fn any(self) -> bool {
-        unsafe { vmaxvq_u16(self.0) != 0 }
-    }
-
-    #[inline(always)]
-    fn all(self) -> bool {
-        unsafe { vminvq_u16(self.0) != 0 }
-    }
-}
-
 macro_rules! bit_helper {
     ($name:ident, $ty:ty, $to_int:ident, $from_int:ident, $op:ident) => {
         #[inline(always)]
@@ -196,29 +139,23 @@ unsafe fn andnot_pd(a: float64x2_t, b: float64x2_t) -> float64x2_t {
 }
 
 #[inline(always)]
-unsafe fn f16x8_to_bits(a: float16x8_t) -> uint16x8_t {
-    unsafe { std::mem::transmute::<float16x8_t, uint16x8_t>(a) }
+unsafe fn mask_f16_to_f32(a: uint16x4_t) -> NeonMaskF32 {
+    unsafe { NeonMaskF32(vreinterpretq_u32_s32(vmovl_s16(vreinterpret_s16_u16(a)))) }
 }
 
 #[inline(always)]
-unsafe fn f16x8_from_bits(a: uint16x8_t) -> float16x8_t {
-    unsafe { std::mem::transmute::<uint16x8_t, float16x8_t>(a) }
+unsafe fn mask_f32_to_f16(a: NeonMaskF32) -> uint16x4_t {
+    unsafe { vmovn_u32(a.0) }
 }
 
 #[inline(always)]
-unsafe fn mask_f16x8_to_f32(a: NeonMaskF16) -> NeonMaskF32 {
-    unsafe {
-        let tested = vtstq_u16(a.0, a.0);
-        NeonMaskF32(vreinterpretq_u32_s32(vmovl_s16(vreinterpret_s16_u16(vget_low_u16(tested)))))
-    }
+unsafe fn f16_to_bits(a: float16x4_t) -> uint16x4_t {
+    unsafe { std::mem::transmute::<float16x4_t, uint16x4_t>(a) }
 }
 
 #[inline(always)]
-unsafe fn mask_f32_to_f16x8(a: NeonMaskF32) -> NeonMaskF16 {
-    unsafe {
-        let narrowed = vmovn_u32(a.0);
-        NeonMaskF16(vcombine_u16(narrowed, narrowed))
-    }
+unsafe fn f16_from_bits(a: uint16x4_t) -> float16x4_t {
+    unsafe { std::mem::transmute::<uint16x4_t, float16x4_t>(a) }
 }
 
 pub trait HalfImpl: Copy + Send + Sync + 'static {
@@ -606,72 +543,69 @@ impl HalfImpl for HalfImplSoftware {
 }
 
 impl HalfImpl for HalfImplF16 {
-    type f16 = float16x8_t;
+    type f16 = float16x4_t;
     type bf16 = float32x4_t;
-    type m16 = NeonMaskF16;
-
-    const f16_lanes: usize = 8;
-    const bf16_lanes: usize = 4;
+    type m16 = NeonMaskF32;
 
     #[inline(always)]
     fn f16_to_f32(self, a: Self::f16) -> float32x4_t {
-        unsafe { vcvt_f32_f16(vget_low_f16(a)) }
+        unsafe { vcvt_f32_f16(a) }
     }
 
     #[inline(always)]
     fn f32_to_f16(self, a: float32x4_t) -> Self::f16 {
-        unsafe { vcombine_f16(vcvt_f16_f32(a), vcvt_f16_f32(vdupq_n_f32(0.0))) }
+        unsafe { vcvt_f16_f32(a) }
     }
 
     #[rustfmt::skip] #[inline(always)]    fn bf16_to_f32(self, a: Self::bf16) -> float32x4_t { HalfImplSoftware.bf16_to_f32(a) }
     #[rustfmt::skip] #[inline(always)]    fn f32_to_bf16(self, a: float32x4_t) -> Self::bf16 { HalfImplSoftware.f32_to_bf16(a) }
-    #[rustfmt::skip] #[inline(always)]    fn m16_to_m32(self, a: Self::m16) -> NeonMaskF32 { unsafe { mask_f16x8_to_f32(a) } }
-    #[rustfmt::skip] #[inline(always)]    fn m32_to_m16(self, a: NeonMaskF32) -> Self::m16 { unsafe { mask_f32_to_f16x8(a) } }
+    #[rustfmt::skip] #[inline(always)]    fn m16_to_m32(self, a: Self::m16) -> NeonMaskF32 { a }
+    #[rustfmt::skip] #[inline(always)]    fn m32_to_m16(self, a: NeonMaskF32) -> Self::m16 { a }
 
     #[inline(always)]
     fn splat_f16(self, value: f16) -> Self::f16 {
-        unsafe { f16x8_from_bits(vdupq_n_u16(value.to_bits())) }
+        unsafe { f16_from_bits(vdup_n_u16(value.to_bits())) }
     }
 
     #[rustfmt::skip] #[inline(always)]    fn splat_bf16(self, value: bf16) -> Self::bf16 { HalfImplSoftware.splat_bf16(value) }
 
     #[inline(always)]
     fn load_f16(self, src: &[f16]) -> Self::f16 {
-        unsafe { f16x8_from_bits(vld1q_u16(src.as_ptr().cast())) }
+        unsafe { f16_from_bits(vld1_u16(src.as_ptr().cast())) }
     }
 
     #[rustfmt::skip] #[inline(always)]    fn load_bf16(self, src: &[bf16]) -> Self::bf16 { HalfImplSoftware.load_bf16(src) }
 
     #[inline(always)]
     fn store_f16(self, dst: &mut [f16], value: Self::f16) {
-        unsafe { vst1q_u16(dst.as_mut_ptr().cast(), f16x8_to_bits(value)) };
+        unsafe { vst1_u16(dst.as_mut_ptr().cast(), f16_to_bits(value)) };
     }
 
     #[rustfmt::skip] #[inline(always)]    fn store_bf16(self, dst: &mut [bf16], value: Self::bf16) { HalfImplSoftware.store_bf16(dst, value) }
 
     #[inline(always)]
     fn bitand_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
-        unsafe { f16x8_from_bits(vandq_u16(f16x8_to_bits(a), f16x8_to_bits(b))) }
+        unsafe { f16_from_bits(vand_u16(f16_to_bits(a), f16_to_bits(b))) }
     }
 
     #[inline(always)]
     fn bitor_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
-        unsafe { f16x8_from_bits(vorrq_u16(f16x8_to_bits(a), f16x8_to_bits(b))) }
+        unsafe { f16_from_bits(vorr_u16(f16_to_bits(a), f16_to_bits(b))) }
     }
 
     #[inline(always)]
     fn bitxor_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
-        unsafe { f16x8_from_bits(veorq_u16(f16x8_to_bits(a), f16x8_to_bits(b))) }
+        unsafe { f16_from_bits(veor_u16(f16_to_bits(a), f16_to_bits(b))) }
     }
 
     #[inline(always)]
     fn bitnot_f16(self, a: Self::f16) -> Self::f16 {
-        unsafe { f16x8_from_bits(vmvnq_u16(f16x8_to_bits(a))) }
+        unsafe { f16_from_bits(vmvn_u16(f16_to_bits(a))) }
     }
 
     #[inline(always)]
     fn bitandnot_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
-        unsafe { f16x8_from_bits(vbicq_u16(f16x8_to_bits(b), f16x8_to_bits(a))) }
+        unsafe { f16_from_bits(vbic_u16(f16_to_bits(b), f16_to_bits(a))) }
     }
 
     #[rustfmt::skip] #[inline(always)]    fn bitand_bf16(self, a: Self::bf16, b: Self::bf16) -> Self::bf16 { HalfImplSoftware.bitand_bf16(a, b) }
@@ -682,134 +616,102 @@ impl HalfImpl for HalfImplF16 {
 
     #[inline(always)]
     fn abs_f16(self, a: Self::f16) -> Self::f16 {
-        unsafe { vabsq_f16(a) }
+        unsafe { vabs_f16(a) }
     }
 
     #[inline(always)]
     fn neg_f16(self, a: Self::f16) -> Self::f16 {
-        unsafe { vnegq_f16(a) }
+        unsafe { vneg_f16(a) }
     }
 
     #[inline(always)]
     fn sqrt_f16(self, a: Self::f16) -> Self::f16 {
-        unsafe { vsqrtq_f16(a) }
+        unsafe { vsqrt_f16(a) }
     }
 
     #[inline(always)]
     fn add_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
-        unsafe { vaddq_f16(a, b) }
+        unsafe { vadd_f16(a, b) }
     }
 
     #[inline(always)]
     fn sub_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
-        unsafe { vsubq_f16(a, b) }
+        unsafe { vsub_f16(a, b) }
     }
 
     #[inline(always)]
     fn mul_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
-        unsafe { vmulq_f16(a, b) }
+        unsafe { vmul_f16(a, b) }
     }
 
     #[inline(always)]
     fn div_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
-        unsafe { vdivq_f16(a, b) }
+        unsafe { vdiv_f16(a, b) }
     }
 
     #[inline(always)]
     fn min_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
-        unsafe { vminq_f16(a, b) }
+        unsafe { vmin_f16(a, b) }
     }
 
     #[inline(always)]
     fn max_f16(self, a: Self::f16, b: Self::f16) -> Self::f16 {
-        unsafe { vmaxq_f16(a, b) }
+        unsafe { vmax_f16(a, b) }
     }
 
     #[inline(always)]
     fn mul_add_f16(self, a: Self::f16, b: Self::f16, c: Self::f16) -> Self::f16 {
-        unsafe { vfmaq_f16(c, a, b) }
+        unsafe { vfma_f16(c, a, b) }
     }
 
     #[inline(always)]
     fn mul_sub_f16(self, a: Self::f16, b: Self::f16, c: Self::f16) -> Self::f16 {
-        unsafe { vfmaq_f16(vnegq_f16(c), a, b) }
+        unsafe { vfma_f16(vneg_f16(c), a, b) }
     }
 
     #[inline(always)]
     fn nmul_add_f16(self, a: Self::f16, b: Self::f16, c: Self::f16) -> Self::f16 {
-        unsafe { vfmsq_f16(c, a, b) }
+        unsafe { vfms_f16(c, a, b) }
     }
 
     #[inline(always)]
     fn nmul_sub_f16(self, a: Self::f16, b: Self::f16, c: Self::f16) -> Self::f16 {
-        unsafe { vfmsq_f16(vnegq_f16(c), a, b) }
-    }
-
-    #[inline(always)]
-    fn reduce_sum_f16(self, a: Self::f16) -> f16 {
-        unsafe {
-            let pair = vpaddq_f16(a, a);
-            let quad = vpaddq_f16(pair, pair);
-            let total = vpadd_f16(vget_low_f16(quad), vget_low_f16(quad));
-            f16::from_bits(vget_lane_u16::<0>(vreinterpret_u16_f16(total)))
-        }
-    }
-
-    #[inline(always)]
-    fn reduce_max_f16(self, a: Self::f16) -> f16 {
-        unsafe {
-            let mut value = a;
-            value = vmaxq_f16(value, vextq_f16::<4>(value, value));
-            value = vmaxq_f16(value, vextq_f16::<2>(value, value));
-            value = vmaxq_f16(value, vextq_f16::<1>(value, value));
-            f16::from_bits(vget_lane_u16::<0>(vget_low_u16(vreinterpretq_u16_f16(value))))
-        }
-    }
-
-    #[inline(always)]
-    fn reduce_min_f16(self, a: Self::f16) -> f16 {
-        unsafe {
-            let mut value = a;
-            value = vminq_f16(value, vextq_f16::<4>(value, value));
-            value = vminq_f16(value, vextq_f16::<2>(value, value));
-            value = vminq_f16(value, vextq_f16::<1>(value, value));
-            f16::from_bits(vget_lane_u16::<0>(vget_low_u16(vreinterpretq_u16_f16(value))))
-        }
+        unsafe { vfms_f16(vneg_f16(c), a, b) }
     }
 
     #[inline(always)]
     fn eq_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
-        unsafe { NeonMaskF16(vceqq_f16(a, b)) }
+        unsafe { mask_f16_to_f32(vceq_f16(a, b)) }
     }
 
     #[inline(always)]
     fn ne_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
-        unsafe { NeonMaskF16(vmvnq_u16(vceqq_f16(a, b))) }
+        unsafe { mask_f16_to_f32(vmvn_u16(vceq_f16(a, b))) }
     }
 
     #[inline(always)]
     fn lt_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
-        unsafe { NeonMaskF16(vcltq_f16(a, b)) }
+        unsafe { mask_f16_to_f32(vclt_f16(a, b)) }
     }
 
     #[inline(always)]
     fn le_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
-        unsafe { NeonMaskF16(vcleq_f16(a, b)) }
+        unsafe { mask_f16_to_f32(vcle_f16(a, b)) }
     }
 
     #[inline(always)]
     fn gt_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
-        unsafe { NeonMaskF16(vcgtq_f16(a, b)) }
+        unsafe { mask_f16_to_f32(vcgt_f16(a, b)) }
     }
 
     #[inline(always)]
     fn ge_f16(self, a: Self::f16, b: Self::f16) -> Self::m16 {
-        unsafe { NeonMaskF16(vcgeq_f16(a, b)) }
+        unsafe { mask_f16_to_f32(vcge_f16(a, b)) }
     }
 
     #[inline(always)]
     fn select_f16(self, mask: Self::m16, a: Self::f16, b: Self::f16) -> Self::f16 {
-        unsafe { vbslq_f16(mask.0, a, b) }
+        unsafe { vbsl_f16(mask_f32_to_f16(mask), a, b) }
     }
 }
 
@@ -1551,9 +1453,9 @@ mod fp16_lanes {
     use crate::traits::{FloatSimd, HalfSimd};
 
     #[test]
-    fn native_half_is_eight_lanes() {
+    fn native_half_matches_float_lanes() {
         assert_eq!(<Neon<HalfImplF16> as FloatSimd>::f32_lanes, 4);
-        assert_eq!(<Neon<HalfImplF16> as HalfSimd>::f16_lanes, 8);
+        assert_eq!(<Neon<HalfImplF16> as HalfSimd>::f16_lanes, 4);
         assert_eq!(<Neon<HalfImplF16> as HalfSimd>::bf16_lanes, 4);
     }
 }
