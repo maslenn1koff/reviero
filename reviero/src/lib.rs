@@ -16,7 +16,7 @@
 //! # Implementing an operation
 //!
 //! The [`SimdFn::call`] method is generic over the selected SIMD implementation.
-//! Use [`utils::as_simd_f32s`] or [`utils::as_simd_f64s`] to process complete
+//! Use [`utils::as_simd_f32`] or [`utils::as_simd_f64`] to process complete
 //! vectors; each utility also returns the remaining elements for scalar
 //! handling.
 //!
