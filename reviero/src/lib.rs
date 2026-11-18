@@ -1,6 +1,7 @@
 //! Portable SIMD operations with runtime CPU dispatch.
 //!
-//! `reviero` provides a shared set of vector operations for `f32` and `f64`.
+//! `reviero` provides a shared set of vector operations for `f32`, `f64`, `f16`
+//! and `bf16`.
 //! Implement an operation as [`SimdFn`] and pass it to [`dispatch`]; the
 //! operation is then run using the best supported backend selected for the
 //! current CPU. This lets one implementation work across supported

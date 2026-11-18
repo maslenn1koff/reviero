@@ -5,7 +5,7 @@
 
 **Safe and cross-platform SIMD for Rust.**
 
-`reviero` provides portable SIMD operations with runtime CPU dispatch, allowing the same code to run across different architectures and instruction sets.
+`reviero` provides portable SIMD operations for `f32`, `f64`, `f16` and `bf16` with runtime CPU dispatch, allowing the same code to run across different architectures and instruction sets.
 
 ## Installation
 
@@ -65,7 +65,7 @@ fn main() {
 
 ## Benchmarks
 
-Criterion dot-product benchmarks on an Intel Core i5-12600H. Each chart compares `reviero`, `pulp`, `wide`, and `scalar` for `f32` and `f64` inputs, from 513 to 1,048,576 elements. Higher throughput is better; values are in billions of elements per second (Gelem/s).
+Criterion dot-product benchmarks on an Intel Core i5-12600H. For `f32` and `f64` inputs each chart compares `reviero`, `pulp`, `wide`, and `scalar`; for `f16` and `bf16` inputs it compares `reviero` and `scalar`. Sizes range from 513 to 1,048,576 elements. Higher throughput is better; values are in billions of elements per second (Gelem/s).
 
 ### Native target
 
