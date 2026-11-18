@@ -1218,7 +1218,7 @@ impl<H: HalfImpl> HalfSimd for Neon<H> {
 
     #[inline(always)]
     fn load_bf16(self, src: &[bf16]) -> Self::bf16 {
-        assert!(src.len() >= Self::f16_lanes);
+        assert!(src.len() >= Self::bf16_lanes);
         self.0.load_bf16(src)
     }
 
@@ -1230,7 +1230,7 @@ impl<H: HalfImpl> HalfSimd for Neon<H> {
 
     #[inline(always)]
     fn store_bf16(self, dst: &mut [bf16], value: Self::bf16) {
-        assert!(dst.len() >= Self::f16_lanes);
+        assert!(dst.len() >= Self::bf16_lanes);
         self.0.store_bf16(dst, value)
     }
 
