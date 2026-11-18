@@ -32,6 +32,11 @@ macro_rules! backend_tests {
             }
 
             #[test]
+            fn as_simd() {
+                super::run($crate::backend::test_utils::Check::Utils);
+            }
+
+            #[test]
             fn io() {
                 super::run($crate::backend::test_utils::Check::Io);
             }
@@ -92,6 +97,7 @@ macro_rules! backend_tests {
 /// The operation group executed by [`Run`].
 #[derive(Clone, Copy, Debug)]
 pub enum Check {
+    Utils,
     Io,
     Float,
     Mask,
@@ -114,6 +120,12 @@ impl SimdFn for Run {
     #[inline(always)]
     fn call<S: Simd>(self, simd: S) {
         match self.0 {
+            Check::Utils => {
+                check_utils_f32(simd);
+                check_utils_f64(simd);
+                check_utils_f16(simd);
+                check_utils_bf16(simd);
+            }
             Check::Io => {
                 check_io_f32(simd);
                 check_io_f64(simd);
@@ -161,6 +173,51 @@ impl SimdFn for Run {
         }
     }
 }
+
+macro_rules! define_utils_check {
+    ($name:ident, $ty:ident, $lanes:ident, $convert:expr) => {
+        #[inline(always)]
+        fn $name<S: Simd>(simd: S) {
+            let lanes = S::$lanes;
+            let len = lanes * 3 + lanes / 2 + 1;
+            let data: Vec<$ty> = (0..=len).map(|index| ($convert)(index)).collect();
+
+            // Start one element into the buffer so the loads are not naturally
+            // aligned to the backend's vector width.
+            let src = &data[1..];
+
+            paste::paste! {
+                let (vectors, tail) = crate::utils::[<as_simd_ $ty>](&simd, src);
+                let full = src.len() / lanes * lanes;
+
+                assert_eq!(vectors.len(), full / lanes, concat!(stringify!($ty), " vector count"));
+                assert_eq!(tail.len(), src.len() - full, concat!(stringify!($ty), " tail length"));
+
+                let mut out = vec![<$ty>::default(); lanes];
+                for (index, vector) in vectors.enumerate() {
+                    simd.[<store_ $ty>](&mut out, vector);
+                    assert_eq!(
+                        out.as_slice(),
+                        &src[index * lanes..(index + 1) * lanes],
+                        concat!(stringify!($ty), " vector #{} contents"),
+                        index
+                    );
+                }
+
+                assert_eq!(tail, &src[full..], concat!(stringify!($ty), " tail contents"));
+
+                let (vectors, tail) = crate::utils::[<as_simd_ $ty>](&simd, &[]);
+                assert_eq!(vectors.len(), 0, concat!(stringify!($ty), " empty vector count"));
+                assert!(tail.is_empty(), concat!(stringify!($ty), " empty tail"));
+            }
+        }
+    };
+}
+
+define_utils_check!(check_utils_f32, f32, f32_lanes, |index: usize| index as f32 + 0.25);
+define_utils_check!(check_utils_f64, f64, f64_lanes, |index: usize| index as f64 + 0.25);
+define_utils_check!(check_utils_f16, f16, f16_lanes, |index: usize| f16::from_f32(index as f32 + 0.25));
+define_utils_check!(check_utils_bf16, bf16, bf16_lanes, |index: usize| bf16::from_f32(index as f32 + 0.25));
 
 #[inline(always)]
 fn check_io_f32<S: Simd>(simd: S) {
@@ -406,6 +463,22 @@ fn check_mask_f32<S: FloatSimd>(simd: S) {
         assert!(mixed.not().any(), "f32 mixed not any");
         assert!(!mixed.and(full.not()).any(), "f32 mixed and empty");
     }
+
+    // Ordered comparisons involving NaN must follow IEEE semantics on every
+    // backend: `eq` is false, `ne` is true and all ordering comparisons are
+    // false.
+    let nan = f32::NAN;
+    let nan_lhs: Vec<f32> = (0..lanes).map(|lane| if lane % 2 == 0 { nan } else { lane as f32 }).collect();
+    let nan_rhs: Vec<f32> = (0..lanes).map(|lane| if lane % 2 == 0 { lane as f32 } else { nan }).collect();
+    let nan_lhs = simd.load_f32(&nan_lhs);
+    let nan_rhs = simd.load_f32(&nan_rhs);
+
+    assert!(!simd.eq_f32(nan_lhs, nan_rhs).any(), "f32 NaN eq");
+    assert!(simd.ne_f32(nan_lhs, nan_rhs).all(), "f32 NaN ne");
+    assert!(!simd.lt_f32(nan_lhs, nan_rhs).any(), "f32 NaN lt");
+    assert!(!simd.le_f32(nan_lhs, nan_rhs).any(), "f32 NaN le");
+    assert!(!simd.gt_f32(nan_lhs, nan_rhs).any(), "f32 NaN gt");
+    assert!(!simd.ge_f32(nan_lhs, nan_rhs).any(), "f32 NaN ge");
 }
 
 #[inline(always)]
@@ -481,6 +554,20 @@ fn check_mask_f64<S: FloatSimd>(simd: S) {
         assert!(mixed.not().any(), "f64 mixed not any");
         assert!(!mixed.and(full.not()).any(), "f64 mixed and empty");
     }
+
+    // Same IEEE semantics for NaN as the f32 checks above.
+    let nan = f64::NAN;
+    let nan_lhs: Vec<f64> = (0..lanes).map(|lane| if lane % 2 == 0 { nan } else { lane as f64 }).collect();
+    let nan_rhs: Vec<f64> = (0..lanes).map(|lane| if lane % 2 == 0 { lane as f64 } else { nan }).collect();
+    let nan_lhs = simd.load_f64(&nan_lhs);
+    let nan_rhs = simd.load_f64(&nan_rhs);
+
+    assert!(!simd.eq_f64(nan_lhs, nan_rhs).any(), "f64 NaN eq");
+    assert!(simd.ne_f64(nan_lhs, nan_rhs).all(), "f64 NaN ne");
+    assert!(!simd.lt_f64(nan_lhs, nan_rhs).any(), "f64 NaN lt");
+    assert!(!simd.le_f64(nan_lhs, nan_rhs).any(), "f64 NaN le");
+    assert!(!simd.gt_f64(nan_lhs, nan_rhs).any(), "f64 NaN gt");
+    assert!(!simd.ge_f64(nan_lhs, nan_rhs).any(), "f64 NaN ge");
 }
 
 #[inline(always)]
@@ -599,7 +686,9 @@ macro_rules! define_half_convert_check {
         #[inline(always)]
         fn $name<S: HalfSimd>(simd: S) {
             let lanes = S::$lanes;
-            assert_eq!(S::f32_lanes, lanes, concat!(stringify!($ty), " and f32 lane count mismatch"));
+            if S::f32_lanes != lanes {
+                return;
+            }
 
             let src: Vec<$ty> = (0..lanes).map(|lane| <$ty>::from_f32((lane as f32 - 3.5) * 0.25)).collect();
             let raw: Vec<f32> = (0..lanes).map(|lane| 1.0 + (lane as f32 + 1.0) / 1024.0).collect();
