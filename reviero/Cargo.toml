@@ -2,7 +2,7 @@
 name = "reviero"
 version = "0.2.0"
 edition = "2024"
-rust-version = "1.89"
+rust-version = "1.94"
 description = "safe simd-abstraction with runtime dispatch :3"
 license = "MIT"
 repository = "https://github.com/maslenn1koff/reviero"
