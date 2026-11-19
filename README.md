@@ -1,10 +1,9 @@
 # reviero
 
-[![crates.io](https://img.shields.io/crates/v/reviero.svg)](https://crates.io/crates/reviero)
-[![docs.rs](https://docs.rs/reviero/badge.svg)](https://docs.rs/reviero)
-[![CI](https://github.com/maslenn1koff/reviero/actions/workflows/rust.yml/badge.svg)](https://github.com/maslenn1koff/reviero/actions/workflows/rust.yml)
-[![MSRV](https://img.shields.io/crates/msrv/reviero.svg)](https://crates.io/crates/reviero)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![crates.io](https://img.shields.io/crates/v/reviero?style=flat&labelColor=white&color=white&logoColor=black)](https://crates.io/crates/reviero)
+[![CI](https://img.shields.io/github/actions/workflow/status/maslenn1koff/reviero/rust.yml?style=flat&label=CI&labelColor=white&color=white)](https://github.com/maslenn1koff/reviero/actions/workflows/rust.yml)
+[![MSRV](https://img.shields.io/crates/msrv/reviero?style=flat&labelColor=white&color=white)](https://crates.io/crates/reviero)
+[![License](https://img.shields.io/badge/license-MIT-white?style=flat&labelColor=white&color=white)](LICENSE)
 
 **Safe and cross-platform SIMD for Rust.**
 
