@@ -73,11 +73,11 @@ fn main() {
     let y = vec![f16::from_f32(2.0); 4096];
 
     let product = dispatch(Dotf16(&x, &y));
-    println!("dot product(f32): {product}");
+    println!("dot product(f16): {product}");
 
     let x = vec![bf16::from_f32(1.0); 4096];
     let y = vec![bf16::from_f32(2.0); 4096];
 
     let product = dispatch(Dotbf16(&x, &y));
-    println!("dot product(f64): {product}");
+    println!("dot product(bf16): {product}");
 }
